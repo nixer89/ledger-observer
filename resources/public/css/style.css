@@ -567,6 +567,10 @@ input:focus:-ms-input-placeholder { color:transparent; }
     border-radius: 3px;
 }
 
+.landing > .container > a:hover {
+    background-color: #111;
+}
+
 
 .fade-in {
     -webkit-animation: fadein 1s; /* Safari, Chrome and Opera > 12.1 */
