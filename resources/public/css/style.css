@@ -1,0 +1,606 @@
+/* some style */
+
+html {
+    background: radial-gradient(circle at bottom center,rgba(55,55,55,1) 0%, rgba(25,25,25,1) 70%);
+    background: -moz-radial-gradient(circle at bottom, rgba(55,  55,  55, 1) 0%, rgba(25, 25, 25, 1)70% );
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    overflow: hidden;
+    height: 100%;
+    font-family: 'Ropa Sans';
+}
+
+* {
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+    text-rendering: optimizeLegibility;
+    font-kerning: normal;
+}
+
+
+body {
+    min-width: 500px;
+    user-drag: none;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+}
+
+.sidebar {
+    position: relative;
+    left: 60px;
+    top: 50px;
+    width: 230px;
+}
+
+.logo-bottom-right {
+    width: 130px;
+    height: 14px;
+    background-repeat: no-repeat;
+    background-size: 130px auto;
+    background-image: url('../images/logo.png');
+    bottom: 40px;
+    right: 40px;
+    position: absolute;
+}
+
+.left-menu {
+    position: absolute;
+    top: 47px;
+    right: 40px;
+    color: white;
+}
+
+.left-menu ul {
+    list-style-type: none
+}
+
+.menu-image {
+    opacity: 0.5;
+    filter: alpha(opacity=50); /* For IE8 and earlier */
+}
+
+.menu-image:hover {
+    opacity: 1;
+    filter: alpha(opacity=100); /* For IE8 and earlier */
+}
+
+.left-menu li {
+    float: left;
+    cursor: pointer;
+}
+
+.sidebar > .info {
+    position: absolute;
+    top: 40px;
+    color: #7d7d7d;
+    font-size: 13px;
+}
+
+.sidebar > .search-field {
+    position: absolute;
+    width: 100%;
+}
+
+.sidebar > .search-field > .search-state {
+    position: absolute;
+    top: 10px;
+    right: -25px;
+    color: white;
+}
+
+.sidebar > .search-field > .search-state > .material-icons {
+    font-size: 14px;
+}
+
+.sidebar > .search-field > input {
+    width: 100%;
+    border: 0 solid #000;
+    border-bottom: 1px solid #7d7d7d;
+    background-color: transparent;
+    padding: 10px 30px 10px 0;
+    color: white;
+    font-weight: 700;
+    font-family: "Ropa Sans";
+    background-repeat: no-repeat;
+    background-position: right;
+
+}
+
+input:focus::-webkit-input-placeholder { color:transparent; }
+input:focus:-moz-placeholder { color:transparent; } /* FF 4-18 */
+input:focus::-moz-placeholder { color:transparent; } /* FF 19+ */
+input:focus:-ms-input-placeholder { color:transparent; }
+
+.sidebar > .search-field > input:focus {
+    outline: none;
+    border-bottom: 1px solid #ffffff;
+}
+
+
+#header-item {
+    float: right;
+    padding: 17px;
+}
+
+#header-item input {
+    background-color: #202531;
+    margin-top: -5px;
+    border: 0px;
+    height: 24px;
+    width: 200px;
+    border-radius: 2px;
+    font-family: 'Ropa Sans';
+    padding-left: 10px;
+    font-size: 12px;
+    color: #ccc;
+}
+#header-item input:focus {
+    outline: none;
+}
+
+.search-dropdown {
+    position: absolute;
+    top: 40px;
+    color: #eee;
+    width: 260px;
+    font-size: 16px;
+}
+
+.search-dropdown .error-info {
+    display: block;
+    padding: 30px 0px;
+    font-weight: bold;
+}
+
+.search-dropdown .error-info-back {
+    color: #7d7d7d;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    vertical-align: middle;
+    margin-top: 5px;
+}
+
+.search-dropdown .error-info-back .material-icons {
+    font-size: 14px;
+    margin-right: 0;
+}
+
+.search-dropdown ul {
+    padding: 0;
+    margin: 0;
+    margin-top: 20px;
+    list-style-type: none
+}
+
+.search-dropdown ul li {
+
+    height: 30px;
+    padding: 10px 0;
+    cursor: pointer;
+}
+
+.search-dropdown ul li:hover {
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.search-dropdown ul li .result-entry-details {
+    cursor: pointer;
+    float: left;
+}
+
+.search-dropdown ul li .result-entry:hover .material-icons {
+    visibility: visible;
+}
+
+.search-dropdown ul li .result-entry .material-icons {
+    visibility: hidden;
+    float: right;
+}
+
+.search-dropdown ul li .result-entry-info {
+    font-size: 12px;
+    color: #999;
+}
+
+
+
+#header-item > a {
+    color: #723349;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+
+.sidebar > .info a {
+    color: #7d7d7d;
+}
+
+.sidebar > .info a:visited {
+    color: #7d7d7d;
+}
+
+#renderer {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+
+.counter-component {
+    float:left;
+    marign-bottom: -2px;
+}
+
+.counter-number {
+    float: left;
+    color: #fff;
+    text-align: right;
+    width: 55px;
+    padding-right: 8px;
+    
+}
+
+.counter-text {
+    float: left;
+    text-transform: uppercase;
+    color: #7d7d7d;
+    width: 35px;
+}
+
+.counter-components {
+    padding: 14px;
+    font-size: 18px;
+}
+
+
+#inspect-menu {
+    position: absolute;
+    top: 60px;
+    color: #7d7d7d;
+}
+
+#inspect-menu > ul {
+    padding: 0;
+    margin: 0;
+}
+
+#inspect-menu > ul > li {
+    padding: 3px 0px;
+    margin: 0;
+    list-style: none;
+}
+
+#inspect-menu > ul > li > a {
+    font-size: 14px;
+    color: #7d7d7d;
+    display: inline-flex;
+    vertical-align: middle;
+    text-decoration: none;
+}
+
+#inspect-menu > ul > li > a:hover {
+    color: #fff;
+}
+
+
+#inspect-menu > ul > li .material-icons {
+    font-size: 14px;
+    width: 22px;
+}
+
+.connecting-label {
+    color: white;
+    font-weight: bold;
+    margin-left: 60px;
+}
+
+
+
+.inspect-box {
+    width: 280px;
+    position: absolute;
+    top: 160px;
+    overflow: hidden;
+}
+
+.inspect-box > .info {
+    font-size: 14px;
+    color: white;
+    font-weight: bold;
+}
+
+.inspect-box-inner {
+    width: 100%;
+    height: 100%;
+    overflow-y: scroll;
+}
+
+.scroll-bar-handle {
+    background-color: black;
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 10px;
+    height: 30px;
+    border-radius: 10px;
+    opacity: 0.2;
+}
+
+
+.inspect-tx-entry {
+    padding-top: 12px;
+    display: none;
+    cursor: crosshair;
+}
+
+.inspect-tx-entry-label {
+    float: left;
+    background-color: #202020;
+    width: 60px;
+    font-size: 9px;
+    height: 15px;
+    text-align: center;
+    border-radius: 2px;
+    color: #888;
+    text-transform: uppercase;
+    padding-top: 5px;
+    margin-right: 10px;
+}
+
+.inspect-tx-entry-type {
+    color: #fff;
+    font-weight: bold;
+    float: left;
+    font-size: 11px;
+    padding-top: 4px;
+    padding-left: 10px;
+    height: 13px;
+    font-weight: wbold
+    border-radius: 2px;
+    width: 65px;
+    margin-right: 10px;
+    text-transform: uppercase;
+    border-left: 5px solid #000;
+    white-space: nowrap;
+}
+
+.inspect-tx-entry-type .material-icons {
+    font-size: 12px;
+    margin-left: 3px;
+}
+
+.inspect-tx-entry-type .invalid {
+    text-decoration: line-through;
+    color: #666
+}
+
+.inspect-tx-entry-type .invalid-icon {
+    color: #750036;
+}
+
+.inspect-tx-entry-hash {
+    padding-top: 5px;
+    float: left;
+    font-size: 12px;
+    color: #7d7d7d;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 80px;
+}
+
+.inspect-tx-entry-hash a {
+    color: #7d7d7d;
+    text-decoration: none
+}
+
+.inspect-tx-entry-hash .material-icons {
+    font-size: 10px!important;
+    padding-right: 5px;
+}
+
+
+
+
+.menu-container {
+    position: absolute;
+    top: 50px;
+    right: 50px;
+}
+
+.menu-container .material-icons {
+    color: #7d7d7d;
+    cursor: pointer;
+}
+
+.menu-container .material-icons:hover {
+    color: #fff;
+}
+
+
+.menu {
+    position: absolute;
+    top: 40px;
+    right: 0px;
+    width: 200px;
+    background-color: #111;
+    color: white;
+    display: none;
+}
+
+.menu ul {
+    margin: 0;
+    padding: 20px 30px;
+}
+
+.menu > ul > li {
+    list-style: none;
+    padding: 5px 0;
+    margin: 0;
+}
+
+.menu > ul > li:hover {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.menu > ul > li > .material-icons {
+    font-size: 12px;
+    color: white;
+    padding-right: 10px;
+}
+
+.float-left {
+    float: left;
+}
+
+
+.info-container {
+    height: 100%;
+    width: 400px;
+    background-color: #111;
+    position: absolute;
+    top: 0;
+    right: 0;
+    color: white;
+    padding: 50px;
+    display: none;
+}
+
+.info-container .badge {
+    display: inline;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px 8px;
+    margin: 5px;
+
+}
+.info-container .close {
+    float: right;
+    cursor: pointer;
+    color: #eee;
+}
+
+.info-container h1, h3 {
+    text-transform: uppercase;  
+}
+
+.info-container h1 {
+    font-size: 25px;
+}
+
+.info-container h3 {
+    margin-top: 30px;
+}
+
+.info-container p {
+    line-height: 1.6em;
+}
+
+.info-container .close:hover {
+}
+
+
+
+.landing {
+    height: 100%;
+    width: 100%;
+    position: relative;
+}
+
+.landing > .container {
+    margin: 0 auto;
+    width: 208px;
+    position: relative;
+    top: 50%;
+    transform: translateY(-42%);
+}
+
+.landing > .container > .logo {
+    width: 208px;
+    height: 20px;
+    margin: 0 auto;
+    padding-top: 30px;
+    color: #666;
+    font-size: 13px;
+    background-image: url('../images/logo_big.png');
+    background-repeat: no-repeat;
+}
+
+.landing > .container .warning-text {
+    color: #666;
+    font-size: 12px;
+    width: 150px;
+    float: left;
+    margin-top: 10px;
+}
+
+.landing > .container .warning-icon {
+    float: left;
+    color: #666;
+    padding: 16px;
+    margin-top: 10px;
+}
+
+.landing > .container .warning-icon .material-icons {
+    font-size: 20px;
+}
+
+.landing > .container > a {
+    display: block;
+    text-decoration: none;
+    background-color: #333;
+    color: white;
+    text-transform: uppercase;
+    padding: 10px;
+    font-size: 12px;
+    margin-top: 110px;
+    text-align: center;
+    border-radius: 3px;
+}
+
+
+.fade-in {
+    -webkit-animation: fadein 1s; /* Safari, Chrome and Opera > 12.1 */
+    -moz-animation: fadein 1s; /* Firefox < 16 */
+    -ms-animation: fadein 1s; /* Internet Explorer */
+    -o-animation: fadein 1s; /* Opera < 12.1 */
+    animation: fadein 1s;
+}
+
+@keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Firefox < 16 */
+@-moz-keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Safari, Chrome and Opera > 12.1 */
+@-webkit-keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Internet Explorer */
+@-ms-keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Opera < 12.1 */
+@-o-keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}

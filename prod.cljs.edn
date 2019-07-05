@@ -1,0 +1,8 @@
+^{:watch-dirs ["src"]
+  :css-dirs ["resources/public/css"]
+  :npm {:bundles {"dist/index.bundle.js" "src/js/index.js"}}
+  :open-url false}
+
+{:main          ledger-observer.core
+ :infer-externs true
+ :output-to     "resources/public/cljs-out/main.js"}

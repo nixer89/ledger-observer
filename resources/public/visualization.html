@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+      <script async src="https://www.googletagmanager.com/gtag/js?id=UA-143325418-1"></script>
+      <script>
+       window.dataLayer = window.dataLayer || [];
+       function gtag(){dataLayer.push(arguments);}
+       gtag('js', new Date());
+       gtag('config', 'UA-143325418-1');
+      </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="css/style.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Ropa+Sans" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <meta name="monetization" content="$coil.xrptipbot.com/3y4Lq4sZRiGZdax0Y4HNCA">
+    <style>body {margin: 0;} canvas: {width: 100%;}</style>
+  </head>
+  <body>
+
+		  <script type="x-shader/x-vertex" id="vertexshader">
+			    attribute float size;
+			    attribute vec3 customColor;
+			    varying vec3 vColor;
+			    void main() {
+				      vColor = customColor;
+				      vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+				      gl_PointSize = size;
+				      gl_Position = projectionMatrix * mvPosition;
+			    }
+		  </script>
+
+		  <script type="x-shader/x-fragment" id="fragmentshader">
+			    uniform vec3 color;
+			    uniform sampler2D texture;
+			    varying vec3 vColor;
+			    void main() {
+				      gl_FragColor = vec4( vColor, 1.0 );
+				      gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );
+				      if ( gl_FragColor.a < ALPHATEST ) discard;
+			    }
+		  </script>
+
+      <div id="renderer"></div>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"  type="text/javascript"></script> -->
+    <!-- <script src="http://rawgit.com/mrdoob/stats.js/master/build/stats.min.js" type="text/javascript"></script> -->
+    <script src="cljs-out/main.js" type="text/javascript"></script>
+  </body>
+</html>
