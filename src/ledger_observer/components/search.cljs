@@ -107,7 +107,7 @@
                 (dom/div {:class "result-entry-details"}
                   (dom/div {:class "result-entry-name"} name)
                   (dom/div {:class "result-entry-info"} result))
-                (dom/i {:class "material-icons"} "done"))
+                (dom/img {:src "images/done.png"}))
                (dom/div {:class "result-entry"} "Inspect address"))))))
      result-entries)))
 
@@ -135,13 +135,13 @@
       (dom/div {:class "search-state"}
         (cond
           clicked?
-          (dom/i {:class "material-icons"} "done")
+          (dom/img {:src "images/done.png"})
 
           searching?
-          (dom/i {:class "material-icons"} "search")
+          (dom/img {:src "images/search.png"})
 
           hovered
-          (dom/i {:class "material-icons"} "visibility")))
+          (dom/img {:src "images/visibility.png"})))
 
       (when (error? state)
         (dom/div {:class "search-dropdown fade-in"}
@@ -149,7 +149,7 @@
             (error-msg state)
             (dom/br)
             (dom/div {:class "error-info-back"}
-              (dom/i {:class "material-icons"} "clear")
+              (dom/img {:src "images/clear.png"})
               (dom/span
                 {:onclick #(reacl/send-message! this (make-unblur-message))}
                 "Clear search")))))

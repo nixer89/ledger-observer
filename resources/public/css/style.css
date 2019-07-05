@@ -92,8 +92,9 @@ body {
     color: white;
 }
 
-.sidebar > .search-field > .search-state > .material-icons {
-    font-size: 14px;
+.sidebar > .search-field > .search-state > img {
+    width: 16px;
+    height: 16px;
 }
 
 .sidebar > .search-field > input {
@@ -165,9 +166,11 @@ input:focus:-ms-input-placeholder { color:transparent; }
     margin-top: 5px;
 }
 
-.search-dropdown .error-info-back .material-icons {
-    font-size: 14px;
-    margin-right: 0;
+.search-dropdown .error-info-back img {
+    width: 15px;
+    height: 15px;
+    margin-right: 3px;
+    opacity: 0.6;
 }
 
 .search-dropdown ul {
@@ -194,13 +197,17 @@ input:focus:-ms-input-placeholder { color:transparent; }
     float: left;
 }
 
-.search-dropdown ul li .result-entry:hover .material-icons {
+.search-dropdown ul li .result-entry:hover img {
     visibility: visible;
 }
 
-.search-dropdown ul li .result-entry .material-icons {
-    visibility: hidden;
+.search-dropdown ul li .result-entry img {
     float: right;
+    width: 20px;
+    height: 20px;
+    vertical-align: center;
+    margin-top:  8px;
+    visibility: hidden;
 }
 
 .search-dropdown ul li .result-entry-info {
@@ -208,6 +215,16 @@ input:focus:-ms-input-placeholder { color:transparent; }
     color: #999;
 }
 
+.search-dropdown ul li .result-entry-info img {
+    font-size: 12px;
+    color: #999;
+}
+
+.result-entry .external {
+    width: 12px;
+    height: 12px;
+    opacity: 0.5;
+}
 
 
 #header-item > a {
@@ -265,6 +282,14 @@ input:focus:-ms-input-placeholder { color:transparent; }
     position: absolute;
     top: 60px;
     color: #7d7d7d;
+}
+
+#inspect-menu img {
+    width: 12px;
+    height: 12px;
+    margin-right: 8px;
+    padding-top: 2px;
+    opacity: 0.5;
 }
 
 #inspect-menu > ul {
@@ -384,6 +409,10 @@ input:focus:-ms-input-placeholder { color:transparent; }
 
 .inspect-tx-entry-type .invalid-icon {
     color: #750036;
+    width: 10px;
+    height: 10px;
+    margin-left: 5px;
+    opacity: 0.4;
 }
 
 .inspect-tx-entry-hash {
@@ -401,9 +430,11 @@ input:focus:-ms-input-placeholder { color:transparent; }
     text-decoration: none
 }
 
-.inspect-tx-entry-hash .material-icons {
-    font-size: 10px!important;
-    padding-right: 5px;
+.inspect-tx-entry-hash img {
+    width: 10px;
+    height: 10px;
+    opacity: 0.3;
+    margin-right: 5px;
 }
 
 
@@ -486,8 +517,8 @@ input:focus:-ms-input-placeholder { color:transparent; }
 .info-container .close {
     float: right;
     cursor: pointer;
-    color: #eee;
 }
+
 
 .info-container h1, h3 {
     text-transform: uppercase;  
@@ -547,7 +578,13 @@ input:focus:-ms-input-placeholder { color:transparent; }
     float: left;
     color: #666;
     padding: 16px;
-    margin-top: 10px;
+    margin-top: 8px;
+}
+
+.landing > .container .warning-icon img {
+    width: 20px;
+    height: 20px;
+    opacity: 0.3;
 }
 
 .landing > .container .warning-icon .material-icons {

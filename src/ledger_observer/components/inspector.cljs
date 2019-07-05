@@ -74,12 +74,12 @@
                   {:class "invalid"})
         (tx-type tx-data))
       (when-not (tx-success? tx-data)
-        (dom/i {:class "material-icons invalid-icon"} "warning")))
+        (dom/img {:src "images/warning.png" :class "invalid-icon"})))
     (dom/div {:class "inspect-tx-entry-label"} (tx-label tx-data))
     (dom/div {:class "inspect-tx-entry-hash"}
       (dom/span
         {:style {:white-space "nowrap"}}
-        (dom/i {:class "material-icons"} "launch")
+        (dom/img {:src "images/launch.png"})
         (dom/a {:href (str "https://bithomp.com/explorer/" (tx-tid tx-data))
                 :target "_blank"}
           (tx-tid tx-data))))
@@ -119,13 +119,13 @@
     (dom/ul {:class "item"}
       (dom/li
         (dom/a {:onclick #(unset-fn!) :href "#"}
-          (dom/i {:class "material-icons"} "clear")
+          (dom/img {:src "images/clear.png"})
           "Clear address"))
       (dom/li
         (dom/a
           {:href (str "https://bithomp.com/explorer/" address)
            :target "_blank"}
-          (dom/i {:class "material-icons"} "launch")
+          (dom/img {:src "images/launch.png"})
           "Inspect address on bithomp")))))
 
 

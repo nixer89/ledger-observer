@@ -52,10 +52,9 @@
   (apply dom/div {:class "info-container"
                   :id    info-container-id}
     (dom/div {:class "info-container-content"}
-     (dom/div {:class "close"}
-       (dom/i {:class   "material-icons"
+     (dom/div {:class "close"
                :onclick #(reacl/send-message! this (make-trigger-hide-info-container-message nil))}
-         "clear")))
+       (dom/img {:src "images/clear.png" :width 20 :height 20})))
     content)
 
   handle-message
