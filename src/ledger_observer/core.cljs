@@ -273,7 +273,7 @@
             :class "menu-image"}
            (dom/img {:src "images/info.png" :style {:width "23px" :height "23px"}}))
          (dom/li
-           {:class "menu-image"}
+           {:class "menu-image github-icon"}
            (dom/a {:href "https://github.com/smoes/ledger-observer" :target "_blank"}
              (dom/img {:src "images/github.png" :style {:width "20px" :height "20px" :margin-top "1px"}}
 

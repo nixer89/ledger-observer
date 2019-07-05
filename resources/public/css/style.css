@@ -3,12 +3,23 @@
 html {
     background: radial-gradient(circle at bottom center,rgba(55,55,55,1) 0%, rgba(25,25,25,1) 70%);
     background: -moz-radial-gradient(circle at bottom, rgba(55,  55,  55, 1) 0%, rgba(25, 25, 25, 1)70% );
+    background-attachment: fixed;
     -moz-background-size: cover;
     -o-background-size: cover;
     background-size: cover;
     overflow: hidden;
     height: 100%;
     font-family: 'Ropa Sans';
+}
+
+@media only screen and (max-height: 600px) {
+    html {
+        overflow-y: auto;
+    }
+
+    #renderer {
+        height: 600px!important;
+    }
 }
 
 * {
@@ -20,7 +31,6 @@ html {
 
 
 body {
-    min-width: 500px;
     user-drag: none;
     user-select: none;
     -moz-user-select: none;
@@ -36,13 +46,25 @@ body {
     width: 230px;
 }
 
+@media only screen and (max-width: 550px) {
+
+    .logo-bottom-right {
+        display: none;
+    }
+
+    .github-icon {
+        display: none;
+    }
+
+}
+
 .logo-bottom-right {
     width: 130px;
     height: 14px;
     background-repeat: no-repeat;
     background-size: 130px auto;
     background-image: url('../images/logo.png');
-    bottom: 40px;
+    bottom: 43px;
     right: 60px;
     position: absolute;
 }
@@ -495,7 +517,7 @@ input:focus:-ms-input-placeholder { color:transparent; }
 
 .info-container {
     height: 100%;
-    width: 400px;
+    width: 320px;
     background-color: #111;
     position: absolute;
     top: 0;
@@ -503,6 +525,7 @@ input:focus:-ms-input-placeholder { color:transparent; }
     color: white;
     padding: 50px;
     display: none;
+    z-index: 999;
 }
 
 .info-container .badge {
@@ -554,6 +577,8 @@ input:focus:-ms-input-placeholder { color:transparent; }
     top: 50%;
     transform: translateY(-42%);
 }
+
+
 
 .landing > .container > .logo {
     width: 208px;
