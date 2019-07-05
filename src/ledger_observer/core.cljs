@@ -265,7 +265,7 @@
 
       #_(menu/menu (reacl/opt :reaction (reacl/reaction this #(make-show-info-message %)))
         (app-state-info app-state))
-      (dom/div {:class "left-menu"}
+      (dom/div {:class "right-menu"}
        (dom/ul
          (dom/li
            {:style {:padding-right "10px"}

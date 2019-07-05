@@ -43,18 +43,18 @@ body {
     background-size: 130px auto;
     background-image: url('../images/logo.png');
     bottom: 40px;
-    right: 40px;
+    right: 60px;
     position: absolute;
 }
 
-.left-menu {
+.right-menu {
     position: absolute;
     top: 47px;
-    right: 40px;
+    right: 60px;
     color: white;
 }
 
-.left-menu ul {
+.right-menu ul {
     list-style-type: none
 }
 
@@ -68,7 +68,7 @@ body {
     filter: alpha(opacity=100); /* For IE8 and earlier */
 }
 
-.left-menu li {
+.right-menu li {
     float: left;
     cursor: pointer;
 }
