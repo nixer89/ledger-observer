@@ -1,5 +1,5 @@
 (ns ledger-observer.mouse
-  (:require [active.clojure.record :as rec :include-macros true]))
+  (:require [active.clojure.cljs.record :as rec :include-macros true]))
 
 (defn $ [a] (js/jQuery a))
 

@@ -1,5 +1,5 @@
 (ns ledger-observer.components.inspector
-  (:require [active.clojure.record :as rec :include-macros true]
+  (:require [active.clojure.cljs.record :as rec :include-macros true]
             [cljs.core.async :refer [<! >! go-loop go alt!]]
             [reacl2.core :as reacl :include-macros true]
             [ledger-observer.visualization.data :as data]

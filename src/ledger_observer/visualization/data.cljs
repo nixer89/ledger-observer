@@ -1,6 +1,6 @@
 (ns ledger-observer.visualization.data
   (:require
-   [active.clojure.record :as rec :include-macros true]
+   [active.clojure.cljs.record :as rec :include-macros true]
    [active.clojure.lens :as lens :include-macros true]))
 
 (rec/define-record-type FilterMailboxes

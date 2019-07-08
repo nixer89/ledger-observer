@@ -1,5 +1,5 @@
 (ns ledger-observer.menu
-  (:require [active.clojure.record :as rec :include-macros true]
+  (:require [active.clojure.cljs.record :as rec :include-macros true]
             [active.clojure.lens :as lens]
             [ledger-observer.mouse :as global-mouse]
             [ledger-observer.info :as info]

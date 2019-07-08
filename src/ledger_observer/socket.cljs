@@ -1,6 +1,6 @@
 (ns ledger-observer.socket
   (:require
-   [active.clojure.record :as rec :include-macros true]
+   [active.clojure.cljs.record :as rec :include-macros true]
    [ledger-observer.mailbox :as mailbox]
    [ledger-observer.visualization.render :as renderer]
    [ledger-observer.visualization.data :as data]

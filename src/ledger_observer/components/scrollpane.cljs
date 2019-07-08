@@ -1,5 +1,5 @@
 (ns ledger-observer.components.scrollpane
-  (:require [active.clojure.record :as rec :include-macros true]
+  (:require [active.clojure.cljs.record :as rec :include-macros true]
             [reacl2.core :as reacl :include-macros true]
             [ledger-observer.mouse :as mouse]
             [active-viz.scale :as scale]

@@ -1,6 +1,6 @@
 (ns ledger-observer.visualization.render-utils
   (:require
-   [active.clojure.record :as rec :include-macros true]
+   [active.clojure.cljs.record :as rec :include-macros true]
    [active.clojure.lens :as lens :include-macros true]
    [ledger-observer.visualization.data :as data]
    [ledger-observer.visualization.app-interaction :as app-interaction]))

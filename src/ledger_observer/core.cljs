@@ -1,5 +1,5 @@
 (ns ledger-observer.core
-  (:require [active.clojure.record :as rec :include-macros true]
+  (:require [active.clojure.cljs.record :as rec :include-macros true]
             [active.clojure.lens :as lens]
             cljsjs.jquery
             [reacl2.core :as reacl :include-macros true]

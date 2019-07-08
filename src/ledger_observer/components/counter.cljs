@@ -1,5 +1,5 @@
 (ns ledger-observer.components.counter
-  (:require [active.clojure.record :as rec :include-macros true]
+  (:require [active.clojure.cljs.record :as rec :include-macros true]
             [reacl2.core :as reacl :include-macros true]
             [reacl2.dom :as dom :include-macros true]))
 

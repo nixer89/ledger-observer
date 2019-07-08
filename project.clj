@@ -4,17 +4,18 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
-  :dependencies [[org.clojure/clojure "1.9.0" :scope "provided"]
+  :dependencies [[org.clojure/clojure "1.10.0" :scope "provided"]
                  [org.clojure/core.async "0.4.474"]
 
                  [reacl "2.1.1"]
-                 [de.active-group/active-viz "0.2.2"]
+                 [de.active-group/active-viz "0.2.5"]
 
                  [cljsjs/jquery "3.2.1-0"]
                  [cljsjs/three "0.0.91-1"]
                  [cljs-ajax "0.8.0"]
+                 [quick-type "0.1.0"]
 
-                 [active-clojure "0.27.0" :exclusions [org.clojure/clojure]]
+                 [de.active-group/active-clojure "0.30.0"]
                  [com.cognitect/transit-cljs "0.8.256"]]
 
 

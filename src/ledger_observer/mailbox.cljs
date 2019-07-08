@@ -1,5 +1,5 @@
 (ns ledger-observer.mailbox
-  (:require [active.clojure.record :as rec :include-macros true]))
+  (:require [active.clojure.cljs.record :as rec :include-macros true]))
 
 
 (rec/define-record-type Mailbox

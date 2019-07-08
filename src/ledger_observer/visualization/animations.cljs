@@ -1,5 +1,5 @@
 (ns ledger-observer.visualization.animations
-  (:require [active.clojure.record :as rec :include-macros true]))
+  (:require [active.clojure.cljs.record :as rec :include-macros true]))
 
 
 

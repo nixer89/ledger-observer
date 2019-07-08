@@ -1,5 +1,5 @@
 (ns ledger-observer.visualization.graph-layout
-  (:require [active.clojure.record :as rec :include-macros true]
+  (:require [active.clojure.cljs.record :as rec :include-macros true]
             [ledger-observer.visualization.data :as data]
             [ngraph-layout :as Layout]
             [ngraph-graph :as Graph]))

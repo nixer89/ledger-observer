@@ -2,7 +2,7 @@
   (:require three
 
             [active.clojure.lens :as lens :include-macros true]
-            [active.clojure.record :as rec :include-macros true]
+            [active.clojure.cljs.record :as rec :include-macros true]
 
             [ledger-observer.visualization.graph-layout :as graph-layout]
             [ledger-observer.visualization.animations :as animations]

@@ -1,5 +1,5 @@
 (ns ledger-observer.bithomp-userinfo
-  (:require [active.clojure.record :as rec :include-macros true]
+  (:require [active.clojure.cljs.record :as rec :include-macros true]
             [ajax.core :refer [GET]]))
 
 (def bithomp-user-info (atom nil))

@@ -2,7 +2,7 @@
   (:require [ledger-observer.visualization.data :as data]
             [ledger-observer.mailbox :as mailbox]
             [ledger-observer.visualization.animations :as animation]
-            [active.clojure.record :as rec :include-macros true]))
+            [active.clojure.cljs.record :as rec :include-macros true]))
 
 (rec/define-record-type Nop (make-nop) nop? [])
 (def nop (make-nop))

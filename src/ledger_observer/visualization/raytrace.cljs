@@ -1,6 +1,6 @@
 (ns ledger-observer.visualization.raytrace
   (:require
-   [active.clojure.record :as rec :include-macros true]))
+   [active.clojure.cljs.record :as rec :include-macros true]))
 
 
 (rec/define-record-type Ray
