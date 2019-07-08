@@ -303,7 +303,7 @@
          (app-state-search-state app-state) ?hovered-address ?clicked-address)
 
        (when ?clicked-address
-         (when (search/is-empty-state? (app-state-search-state app-state))
+         (when (search/has-idle-status? (app-state-search-state app-state))
           (dom/keyed ?clicked-address
             (dom/span
               (inspector/inspector-menu ?clicked-address

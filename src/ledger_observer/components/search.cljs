@@ -1,5 +1,6 @@
 (ns ledger-observer.components.search
   (:require [active.clojure.cljs.record :as rec :include-macros true]
+            [active.clojure.sum-type :as st :include-macros true]
             [active.clojure.lens :as lens]
             [ledger-observer.bithomp-userinfo :as bithomp]
             [ledger-observer.components.scrollpane :as scrollpane]
@@ -7,12 +8,16 @@
             [quick-type.core :as qt :include-macros true]
             [reacl2.dom :as dom :include-macros true]))
 
-(qt/def-type status [(waiting [id])
-                     (error [id msg])
-                     (success [id address])
-                     (empty-state [])])
+(qt/def-type status
+  [(waiting [id])
+   (error [id msg])
+   (success [id address])
+   (idle [])])
+
+(def idle-inst (make-idle))
 
 (qt/def-record search-field-state [content status])
+
 
 (qt/def-type callback-message
   [(search-result-failure-message [id])
@@ -26,6 +31,9 @@
    (unblur-message [])
    (typed-message [content])])
 
+(qt/def-type message
+  [interaction-message
+   callback-message])
 
 (qt/def-type action
   [(search-action [addresses callback])
@@ -34,10 +42,10 @@
    (unhovered-address-action [])])
 
 
-(def initial-state (make-search-field-state nil (make-empty-state)))
+(def initial-state (make-search-field-state nil (make-idle)))
 
-(defn is-empty-state? [search-field-state]
-  (empty-state? (search-field-state-status search-field-state)))
+(defn has-idle-status? [search-field-state]
+  (idle? (search-field-state-status search-field-state)))
 
 (defn make-result-callback [ref id]
   (fn [res]
@@ -47,8 +55,84 @@
        (make-search-result-failure-message id)))))
 
 
+(defn waiting-with-id? [search-field-state id]
+  (let [?waiting (search-field-state-status search-field-state)]
+    (and (waiting? ?waiting) (= (waiting-id ?waiting) id))))
+
+
+(defn address-not-found-error [id]
+  (make-error id "Address or name not found!"))
+
+(def min-character-error
+  (make-error nil "Please enter at least two characters"))
+
+(defn not-min-length? [content] (>= 2 (count content)))
+
 (defn ripple-address? [input]
   (boolean (re-find #"r[0-9a-zA-Z]{24,34}" input)))
+
+
+
+
+(defn handle-interaction-message [this local-state msg]
+
+  (st/match interaction-message msg
+
+    (make-mark-address-message address)
+    (reacl/return :action (make-hovered-address-action address))
+
+    unmark-address-message?
+    (reacl/return :action (make-unhovered-address-action))
+
+    unblur-message?
+    (reacl/return :app-state initial-state)
+
+    (make-activate-search-result-message address)
+    (reacl/return
+      :action (make-click-address-action address)
+      :action (make-unhovered-address-action)
+      :app-state initial-state)
+
+    (make-typed-message content)
+    (let [id (str (gensym))]
+      (cond
+
+        (empty? content)
+        (reacl/return
+          :app-state initial-state
+          :action (make-unhovered-address-action))
+
+        (not-min-length? content)
+        (reacl/return
+          :app-state (-> local-state
+                       (search-field-state-content content)
+                       (search-field-state-status min-character-error))
+          :action (make-unhovered-address-action))
+
+        (ripple-address? content)
+        (reacl/return
+          :action (make-search-action [content] (make-result-callback this id))
+          :action (make-unhovered-address-action)
+          :app-state (-> local-state
+                       (search-field-state-content content)
+                       (search-field-state-status (make-waiting id))))
+
+        :default
+        (let [addresses (bithomp/addresses-by-name content)]
+          (if (not-empty addresses)
+            (reacl/return :app-state
+              (-> local-state
+                (search-field-state-content content)
+                (search-field-state-status (make-waiting id)))
+              :action (make-unhovered-address-action)
+              :action (make-search-action addresses (make-result-callback this id)))
+            (reacl/return :app-state
+              (-> local-state
+                (search-field-state-content content)
+                (search-field-state-status address-not-found-error)))))))
+    )
+  )
+
 
 (reacl/defclass results this result-entries [parent]
   render
@@ -71,26 +155,41 @@
                (dom/div {:class "result-entry"} "Inspect address"))))))
      result-entries)))
 
+(defn show-error [this error-msg]
+  (dom/div {:class "search-dropdown fade-in"}
+    (dom/div {:class "error-info"}
+      error-msg
+      (dom/br)
+      (dom/div {:class "error-info-back"}
+        (dom/img {:src "images/clear.png"})
+        (dom/span
+          {:onclick #(reacl/send-message! this (make-unblur-message))}
+          "Clear search")))))
+
 
 (reacl/defclass search-field this local-state [hovered clicked]
 
   refs [field]
 
   render
-  (let [?content (search-field-state-content local-state)
-        content (bithomp/get-name (or hovered ?content clicked ""))
-        clicked? (and clicked (not (or hovered ?content)))
-        searching? (not (or clicked hovered (not ?content)))
-        state   (search-field-state-status local-state)]
+  (let [?content     (search-field-state-content local-state)
+        content      (bithomp/get-name (or hovered ?content clicked ""))
+        clicked?     (and clicked (not (or hovered ?content)))
+        searching?   (not (or clicked hovered (not ?content)))
+        status-field (search-field-state-status local-state)]
 
     (dom/div {:class "search-field fade-in"}
+
       (dom/input
         {:placeholder "Search for address or name"
-        :id          "sf"
-        :onchange    #(reacl/send-message! this (make-typed-message (.-value (reacl/get-dom field))))
-        :onblur      #(js/window.setTimeout (fn [] (reacl/send-message! this (make-unblur-message))) 100)
-        :ref         field
-        :value       content})
+         :id          "sf"
+         :onchange    #(reacl/send-message! this
+                         (make-typed-message (.-value (reacl/get-dom field))))
+         :onblur      #(js/window.setTimeout
+                         (fn [] (reacl/send-message! this (make-unblur-message))) 100)
+         :ref         field
+         :value       content})
+
 
       (dom/div {:class "search-state"}
         (cond
@@ -103,109 +202,48 @@
           hovered
           (dom/img {:src "images/visibility.png"})))
 
-      (when (error? state)
-        (dom/div {:class "search-dropdown fade-in"}
-          (dom/div {:class "error-info"}
-            (error-msg state)
-            (dom/br)
-            (dom/div {:class "error-info-back"}
-              (dom/img {:src "images/clear.png"})
-              (dom/span
-                {:onclick #(reacl/send-message! this (make-unblur-message))}
-                "Clear search")))))
 
-      (when (success? state)
-       (dom/div {:class "search-dropdown fade-in"}
-         (scrollpane/pane
-           false
-           {:color    "white"    :height "350px"
-            :position "absolute" :top    0 :left 0}
-           results
-           (success-address state)
-           this)))))
+      (st/match status status-field
+
+        (make-error _ error-msg)
+        (show-error this error-msg)
+
+        (make-success _ address)
+        (dom/div {:class "search-dropdown fade-in"}
+          (scrollpane/pane
+            false
+            {:color    "white"    :height "350px"
+             :position "absolute" :top    0 :left 0}
+            results
+            address
+            this))
+
+        idle? nil
+        waiting? nil
+        )))
+
 
   handle-message
   (fn [msg]
-    (cond
+    (st/match message msg
 
-      (typed-message? msg)
-      (let [id (str (gensym))
-            content (typed-message-content msg)]
-        (cond
+      interaction-message?
+      (handle-interaction-message this local-state msg)
 
-          (zero? (count content))
-          (reacl/return
-            :app-state (-> local-state
-                           (search-field-state-content content)
-                           (search-field-state-status (make-empty-state)))
-            :action (make-unhovered-address-action))
+      (make-search-result-failure-message id)
+      (if (waiting-with-id? local-state id)
+        (reacl/return
+          :app-state (search-field-state-status local-state (address-not-found-error id))
+          :action (make-unhovered-address-action))
+        (reacl/return))
 
-          (>= 2 (count content))
-          (reacl/return
-            :app-state (-> local-state
-                           (search-field-state-content content)
-                           (search-field-state-status (make-error nil "Please enter at least two characters")))
-            :action (make-unhovered-address-action))
-
-          (ripple-address? content)
-          (reacl/return
-            :action (make-search-action [content] (make-result-callback this id))
-            :action (make-unhovered-address-action)
-            :app-state (-> local-state
-                           (search-field-state-content content)
-                           (search-field-state-status (make-waiting id))))
-
-          :default
-          (let [addresses (bithomp/addresses-by-name content)]
-            (if (not-empty addresses)
-              (reacl/return :app-state
-                (-> local-state
-                  (search-field-state-content content)
-                  (search-field-state-status (make-waiting id)))
-                :action (make-search-action addresses (make-result-callback this id))
-                :action (make-unhovered-address-action))
-              (reacl/return :app-state
-                (-> local-state
-                  (search-field-state-content content)
-                  (search-field-state-status (make-error nil "Address or name not found!"))))))))
+      (make-search-result-success-message id results)
+      (if (waiting-with-id? local-state id)
+        (reacl/return :app-state
+          (search-field-state-status local-state (make-success id results)))
+        (reacl/return :app-state local-state))
 
 
 
-      (search-result-failure-message? msg)
-      (reacl/return :app-state
-        (let [state (search-field-state-status local-state)]
-          (if (and (waiting? state)
-                (= (search-result-failure-message-id msg) (waiting-id state)))
-            (search-field-state-status local-state (make-error (waiting-id state) "Address or name not found!"))
-            local-state))
-        :action (make-unhovered-address-action))
-
-      (search-result-success-message? msg)
-      (let [state (search-field-state-status local-state)
-            msg-id (search-result-success-message-id msg)
-            msg-res (search-result-success-message-address msg)]
-        (if (and (waiting? state) (= (waiting-id state)))
-          (reacl/return :app-state (search-field-state-status local-state (make-success msg-id msg-res)))
-          (reacl/return :app-state local-state)))
-
-      (activate-search-result-message? msg)
-      (reacl/return
-        :action (make-click-address-action (activate-search-result-message-address msg))
-        :action (make-unhovered-address-action)
-        :app-state (-> local-state
-                       (search-field-state-status (make-empty-state))
-                       (search-field-state-content nil)))
-
-      (mark-address-message? msg)
-      (reacl/return :action (make-hovered-address-action (mark-address-message-address msg)))
-
-      (unmark-address-message? msg)
-      (reacl/return :action (make-unhovered-address-action))
-
-      (unblur-message? msg)
-      (reacl/return :app-state
-        (-> local-state
-          (search-field-state-content nil)
-          (search-field-state-status (make-empty-state))))
     )
   ))
