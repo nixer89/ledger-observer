@@ -490,6 +490,7 @@
   (let [interaction-state (data/render-state-interaction-state render-state)
         needs-update? (u/render-state-interaction-needs-update-lens render-state)
         marked (ai/interaction-state-node-marked interaction-state)
+        prev-marked (ai/interaction-state-previous-node-marked interaction-state)
         selected (ai/interaction-state-node-selected interaction-state)
         graph (data/render-state-graph render-state)]
 
@@ -499,10 +500,10 @@
           ((data/gui-component-callbacks-hover-address gui-callback)
            (graph-layout/get-node-id-by-num graph (ai/node-marked-by-mouse-hover-index marked))))
 
-        (when (ai/no-node-marked? marked)
+        (when (and (ai/no-node-marked? marked) (not (ai/node-marked-by-app? prev-marked)))
           ((data/gui-component-callbacks-hover-address gui-callback) nil))
 
-        (when-not (ai/no-node-selected? selected)
+        (when (ai/node-selected-by-mouse-click? selected)
           ((data/gui-component-callbacks-set-address gui-callback)
            (graph-layout/get-node-id-by-num graph (ai/selected-node-index selected))))
 
@@ -539,10 +540,13 @@
     (graph-layout/search render-state msg)
 
     (ai/click-address-message? msg)
-    (mouse/set-mouse-click render-state
-      (graph-layout/get-node-num-by-id
-        (data/render-state-graph render-state)
-        (ai/click-address-message-address msg)))
+    (let [idx (graph-layout/get-node-num-by-id (data/render-state-graph render-state)
+                (ai/click-address-message-address msg))]
+      (lens/overhaul render-state data/render-state-interaction-state
+        #(ai/select % (ai/make-node-selected-by-app idx (animations/linear 0 1 true)))))
+
+    (ai/unclick-address-message? msg)
+    (mouse/unset-mouse-click render-state)
 
     (ai/hovered-address-message? msg)
     (let [idx (graph-layout/get-node-num-by-id (data/render-state-graph render-state)

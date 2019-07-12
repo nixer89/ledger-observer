@@ -4,6 +4,8 @@
             cljsjs.jquery
             [reacl2.core :as reacl :include-macros true]
             [reacl2.dom :as dom :include-macros true]
+            [quick-type.core :as qt :include-macros true]
+            [active.clojure.sum-type :as st :include-macros true]
             [ledger-observer.visualization.render :as renderer]
             [ledger-observer.socket :as socket]
             [ledger-observer.mouse :as global-mouse]
@@ -25,19 +27,89 @@
 (enable-console-print!)
 (set! *warn-on-infer* true)
 
-;; app state of render registry
-(rec/define-record-type AppState
-  (make-app-state render-interaction-mailbox render-tx-mailbox filter-mailboxes
-    connection hovered-address clicked-address search-state tx-stats info) app-state?
-  [render-interaction-mailbox app-state-render-interaction-mailbox
-   render-tx-mailbox app-state-render-tx-mailbox
-   filter-mailboxes app-state-filter-mailboxes
-   connection app-state-connection
-   hovered-address app-state-hovered-address
-   clicked-address app-state-clicked-address
-   search-state app-state-search-state
-   tx-stats app-state-tx-stats
-   info app-state-info])
+
+(qt/def-record app-state
+  [render-interaction-mailbox
+   render-tx-mailbox
+   filter-mailboxes
+   connection
+   search-state
+   inspector-state
+   tx-stats
+   info])
+
+
+(defn maybe-clicked-address [app-state]
+  (let [?addr (-> app-state
+               app-state-search-state
+               search/search-field-public-state-result)]
+    (st/match search/result-t ?addr
+      (search/make-search-result addr) addr
+      search/no-result? nil)))
+
+
+(defn maybe-hovered-address [app-state]
+  (let [?highlighted (-> app-state
+
+                       app-state-search-state
+               search/search-field-public-state-highlighted)]
+    (st/match search/highlighted-t ?highlighted
+      (search/make-highlighted addr) addr
+      search/none-highlighted? nil)))
+
+(def set-hovered-address-lens (lens/>> app-state-search-state search/search-field-public-state-highlighted))
+(defn set-hovered-address [app-state address]
+  (set-hovered-address-lens app-state
+    (if address
+      (search/make-highlighted address)
+      search/none-highlighted-inst)))
+
+(defn unset-hovered-address [app-state]
+  (set-hovered-address-lens app-state search/none-highlighted-inst)
+  )
+
+(def set-clicked-address-lens (lens/>> app-state-search-state search/search-field-public-state-result))
+(defn set-clicked-address [app-state address]
+  (-> app-state
+    (app-state-inspector-state inspector/initial-state)
+    (set-clicked-address-lens (search/make-search-result address))))
+
+(defn unset-clicked-address [app-state]
+  (-> app-state
+    (set-clicked-address-lens search/no-result-inst)
+    (app-state-inspector-state inspector/initial-state)))
+
+(qt/def-type color-node-action-t
+  [(highlight-node-action [address])
+   (unhighlight-node-action [])
+   (select-node-action [address])
+   (unselect-node-action [address])])
+
+
+(defn maybe-make-hovered-action [search-state-old search-state-new]
+  (let [highlighted-new (search/search-field-public-state-highlighted search-state-new)
+        highlighted-old (search/search-field-public-state-highlighted search-state-old)]
+    (if (= highlighted-new highlighted-old)
+      []
+      (st/match search/highlighted-t highlighted-new
+        search/none-highlighted? [:action (make-unhighlight-node-action)]
+        (search/make-highlighted address) [:action (make-highlight-node-action address)]))))
+
+
+(defn maybe-make-selected-action [search-state-old search-state-new]
+  (let [selected-new (search/search-field-public-state-result search-state-new)
+        selected-old (search/search-field-public-state-result search-state-old)]
+    (if (= selected-new selected-old)
+      []
+      (st/match search/result-t selected-new
+
+        search/no-result?
+        [:action (make-unselect-node-action (search/search-result-result selected-old))]
+
+        (search/make-search-result address)
+        [:action (make-select-node-action address)]))))
+
+
 
 ;; messages
 (rec/define-record-type SetAddressMessage
@@ -51,7 +123,6 @@
 (rec/define-record-type HoverAddressMessage
   (make-hover-address-message address) hover-address-message?
   [address hover-address-message-address])
-
 
 (rec/define-record-type FetchFilteredTxAction
   (make-fetch-filtered-tx-action receiver channel address) fetch-filtered-tx-action?
@@ -109,9 +180,6 @@
   [address clicked-address-address
    txs clicked-address-txs])
 
-(defn maybe-clicked-address [app-state]
-  (when-let [clicked (app-state-clicked-address app-state)]
-    (clicked-address-address clicked)))
 
 
 (rec/define-record-type DefaultMode (make-default-mode) default-mode? [])
@@ -143,24 +211,6 @@
   [state update-search-state-message-state])
 
 
-(defn handle-unset-address-msg [app-state]
-  (let [clicked (app-state-clicked-address app-state)
-        ?current-address (clicked-address-address clicked)]
-    (unset-clicked! app-state)
-    (remove-filter! app-state ?current-address)
-    (app-state-clicked-address app-state nil)))
-
-
-(defn handle-set-address-msg [app-state msg]
-  (let [address          (set-address-message-address msg)
-        ?current-address (maybe-clicked-address app-state)]
-    ;; if there is a current address, unset it in filter-set of tx ripple socket
-    (if (= address ?current-address)
-      app-state
-      (do
-        (remove-filter! app-state ?current-address)
-        (put-filter! app-state address)
-        (app-state-clicked-address app-state (make-clicked-address address []))))))
 
 
 (defn new-transaction-event->tx [event address]
@@ -172,9 +222,8 @@
     (if (= address (data/new-transaction-event-from event)) "Issuer" "Attendee")
     (data/new-transaction-event-success? event)))
 
-
-(def clicked-address-mode-txs-lens
-  (lens/>> app-state-clicked-address clicked-address-txs))
+(def inspector-txs-lens
+  (lens/>> app-state-inspector-state inspector/state-txs))
 
 (rec/define-record-type TickMeEverySecondAction
   (make-tick-me-every-second-action receiver) tick-me-every-second-action?
@@ -187,7 +236,7 @@
 (defn app-state->fetch-filter-action [app-state reacl-component]
   (make-fetch-filtered-tx-action reacl-component
     (-> app-state app-state-filter-mailboxes data/filter-mailboxes-app-mailbox)
-    (-> app-state app-state-clicked-address clicked-address-address)))
+    (-> app-state maybe-clicked-address)))
 
 
 (defn create-ripple-socket! [ref]
@@ -245,7 +294,7 @@
 
       (reacl/return
         :app-state (make-app-state render-interaction-mailbox render-tx-mailbox filter-mailboxes
-                     (make-not-connected-mode) nil nil search/initial-state (counter/make-counter-state 0 0)
+                     (make-not-connected-mode) search/initial-public-state inspector/initial-state (counter/make-counter-state 0 0)
                      info/nop)
         :action (make-tick-me-every-second-action this)
         :action (bithomp/make-fetch-users-info-action this)
@@ -254,9 +303,7 @@
 
   render
 
-  (let [?clicked-address (maybe-clicked-address app-state)
-        ?hovered-address (app-state-hovered-address app-state)
-        info (app-state-info app-state)]
+  (let [info (app-state-info app-state)]
 
     (dom/div
 
@@ -300,15 +347,14 @@
 
        (search/search-field
          (reacl/opt :reaction (reacl/reaction this #(make-update-search-state-message %)))
-         (app-state-search-state app-state) ?hovered-address ?clicked-address)
+         (app-state-search-state app-state))
 
-       (when ?clicked-address
-         (when (search/has-idle-status? (app-state-search-state app-state))
-          (dom/keyed ?clicked-address
-            (dom/span
-              (inspector/inspector-menu ?clicked-address
-                #(reacl/send-message! this (make-unset-address-message)))
-              (inspector/inspector (clicked-address-mode-txs-lens app-state)))))))
+       (when-let [?clicked-address (maybe-clicked-address app-state)]
+         (dom/keyed ?clicked-address
+           (dom/span
+             (inspector/inspector-menu ?clicked-address
+               #(reacl/send-message! this (make-unset-address-message)))
+             (inspector/inspector (app-state-inspector-state app-state))))))
 
 
 
@@ -322,7 +368,7 @@
             "Connecting to wss://s1.ripple.com")
 
           (app-state-tx-stats app-state)
-          (counter/counter (app-state-tx-stats app-state) this)))
+          (counter/counter (reacl/opt :reaction reacl/no-reaction) (app-state-tx-stats app-state) this)))
 
       (dom/div {:id          "renderer-container"
                 :onmousemove (fn [^js/MouseEvent ev] (mouse/update-render-mouse-position! ev))
@@ -351,7 +397,7 @@
       (reacl/return :app-state
         (let [?address (maybe-clicked-address app-state)]
           (if (= ?address (new-txs-message-address msg))
-            (lens/overhaul app-state clicked-address-mode-txs-lens
+            (lens/overhaul app-state inspector-txs-lens
               (fn [txs] (concat (map #(new-transaction-event->tx % (new-txs-message-address msg))
                                   (remove nil? (new-txs-message-txs msg))) txs)))
             app-state)))
@@ -363,13 +409,20 @@
         (reacl/return))
 
       (unset-address-message? msg)
-      (reacl/return :app-state (handle-unset-address-msg app-state))
+      (reacl/return
+        :app-state (-> app-state
+                     (unset-clicked-address)
+                     (unset-hovered-address))
+        :action (make-unselect-node-action (maybe-clicked-address app-state)))
+
 
       (set-address-message? msg) ;; with nil it is unset
-      (let [new-app-state (handle-set-address-msg app-state msg)]
+      (let [address  (set-address-message-address msg)]
         (reacl/return
-          :app-state new-app-state
-          :action (app-state->fetch-filter-action new-app-state this)))
+          :app-state (set-clicked-address app-state address)
+          :action (app-state->fetch-filter-action app-state this)
+          :action (make-unselect-node-action (maybe-clicked-address app-state))
+          :action (make-select-node-action address)))
 
       (increase-tx-message? msg)
       (let [old-tx (app-state-tx-stats app-state)]
@@ -382,12 +435,20 @@
           (app-state-tx-stats app-state (lens/overhaul old-tx counter/counter-state-seconds inc))))
 
       (update-search-state-message? msg)
-      (reacl/return :app-state
-        (app-state-search-state app-state (update-search-state-message-state msg)))
+      (let [search-state (update-search-state-message-state msg)
+            current-search-state (app-state-search-state app-state)
+            ;; check if new clicked action
+            ?selected-action (maybe-make-selected-action current-search-state search-state)
+            ;; check if new hovered action
+            ?highlighted-action (maybe-make-hovered-action current-search-state search-state)
+            ?actions (concat ?selected-action ?highlighted-action)]
+        (if (empty? ?actions)
+          (reacl/return :app-state (app-state-search-state app-state search-state))
+          (apply reacl/return :app-state (app-state-search-state app-state search-state) ?actions)))
 
       (hover-address-message? msg)
       (reacl/return :app-state
-        (app-state-hovered-address app-state (hover-address-message-address msg)))
+        (set-hovered-address app-state (hover-address-message-address msg)))
 
       (show-info-message? msg)
       (reacl/return :app-state
@@ -459,20 +520,29 @@
       (send-renderer! app-state (graph-layout/make-search-address-message address callback))
       (reacl/return))
 
-    (search/click-address-action? action)
-    (let [address (search/click-address-action-address action)]
-      (println action)
-      (send-renderer! app-state (ai/make-click-address-message address))
-      (reacl/return))
 
-    (search/hovered-address-action? action)
-    (let [address (search/hovered-address-action-address action)]
-      (send-renderer! app-state (ai/make-hovered-address-message address))
-      (reacl/return))
 
-    (search/unhovered-address-action? action)
-    (do (send-renderer! app-state (ai/make-unhovered-address-message))
-        (reacl/return))
+    (color-node-action-t? action)
+    (st/match color-node-action-t action
+
+      (make-unselect-node-action addr)
+      (do (send-renderer! app-state (ai/make-unclick-address-message))
+          (remove-filter! app-state addr)
+          (reacl/return))
+
+      (make-select-node-action addr)
+      (do (send-renderer! app-state (ai/make-click-address-message addr))
+          (put-filter! app-state addr)
+          (reacl/return))
+
+      (make-highlight-node-action addr)
+      (do (send-renderer! app-state (ai/make-hovered-address-message addr))
+          (reacl/return))
+
+      unhighlight-node-action?
+      (do (send-renderer! app-state (ai/make-unhovered-address-message))
+          (reacl/return)))
+
 
     (bithomp/fetch-users-info-action? action)
     (do (bithomp/get-users-info)
@@ -498,5 +568,4 @@
 
 (reacl/render-component (.getElementById ^js/Document js/document "renderer") app
                         (reacl/opt :reduce-action handle-actions)
-                        (make-app-state nil nil nil (make-default-mode) nil nil
-                          search/initial-state nil info/nop))
+                        (make-app-state nil nil nil (make-default-mode) search/initial-public-state inspector/initial-state nil info/nop))

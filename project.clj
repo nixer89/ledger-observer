@@ -7,7 +7,7 @@
   :dependencies [[org.clojure/clojure "1.10.0" :scope "provided"]
                  [org.clojure/core.async "0.4.474"]
 
-                 [reacl "2.1.1"]
+                 [reacl "2.1.3"]
                  [de.active-group/active-viz "0.2.5"]
 
                  [cljsjs/jquery "3.2.1-0"]

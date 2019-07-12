@@ -97,7 +97,7 @@
     (if (not (ai/no-node-selected? selected))
       (lens/overhaul render-state
         data/render-state-interaction-state
-        #(ai/select % ai/no-node-selected))
+        #(ai/select % ai/no-node-selected-inst))
       render-state)))
 
 

@@ -8,40 +8,85 @@
             [quick-type.core :as qt :include-macros true]
             [reacl2.dom :as dom :include-macros true]))
 
-(qt/def-type status
-  [(waiting [id])
-   (error [id msg])
-   (success [id address])
+
+
+;; ==========================================================
+;;                       DATA SHAPES
+;; ==========================================================
+
+;; Represents the status of the search field. A status is
+;; a status is one of the following:
+
+;; * waiting: waiting for the results of a search request with id `id`
+;; * error: received and error for search request with id `id` with message `msg`
+;; * success: a request with `id` found `address` 
+;; * idle: nothings on.
+
+(qt/def-type status-t
+  [
+   (waiting [id])
+   (error [msg])
+   (success [address])
    (idle [])])
 
+;; constant for idle
 (def idle-inst (make-idle))
+
+
+;; Represents the state of a search field. Consists of content,
+;; which is typed content and a status of type status-t
 
 (qt/def-record search-field-state [content status])
 
+
+(qt/def-type result-t
+  [(no-result [])
+   (search-result [result])])
+
+(def no-result-inst (make-no-result))
+
+(qt/def-type highlighted-t
+  [(none-highlighted [])
+   (highlighted [address])])
+
+
+(def none-highlighted-inst (make-none-highlighted))
+
+(qt/def-record search-field-public-state [highlighted result])
+
+
+(defn highlight-address [public-state address]
+  (search-field-public-state-highlighted public-state (make-highlighted address)))
+
+(defn unhighlight-address [public-state address]
+  (search-field-public-state-highlighted public-state none-highlighted-inst))
+
+(defn clear-result [public-state]
+  (search-field-public-state-result public-state no-result-inst))
+
+(defn set-result [public-state address]
+  (search-field-public-state-result public-state (make-search-result address)))
 
 (qt/def-type callback-message
   [(search-result-failure-message [id])
    (search-result-success-message [id address])])
 
-
-(qt/def-type interaction-message
-  [(activate-search-result-message [address])
-   (mark-address-message [address])
-   (unmark-address-message [address])
-   (unblur-message [])
+(qt/def-type interaction-message-t
+  [(set-result-message [address])
+   (highlight-address-message [address])
+   (unhighlight-address-message [address])
+   (clear-result-message [])
    (typed-message [content])])
 
-(qt/def-type message
-  [interaction-message
+(qt/def-type message-t
+  [interaction-message-t
    callback-message])
 
-(qt/def-type action
-  [(search-action [addresses callback])
-   (click-address-action [address])
-   (hovered-address-action [address])
-   (unhovered-address-action [])])
+(qt/def-type action-t
+  [(search-action [addresses callback])])
 
 
+(def initial-public-state (make-search-field-public-state none-highlighted-inst no-result-inst))
 (def initial-state (make-search-field-state nil (make-idle)))
 
 (defn has-idle-status? [search-field-state]
@@ -60,11 +105,11 @@
     (and (waiting? ?waiting) (= (waiting-id ?waiting) id))))
 
 
-(defn address-not-found-error [id]
-  (make-error id "Address or name not found!"))
+(def address-not-found-error
+  (make-error "Address or name not found!"))
 
 (def min-character-error
-  (make-error nil "Please enter at least two characters"))
+  (make-error "Please enter at least two characters"))
 
 (defn not-min-length? [content] (>= 2 (count content)))
 
@@ -74,64 +119,60 @@
 
 
 
-(defn handle-interaction-message [this local-state msg]
+(defn handle-interaction-message [this public-state local-state msg]
 
-  (st/match interaction-message msg
+  (st/match interaction-message-t msg
 
-    (make-mark-address-message address)
-    (reacl/return :action (make-hovered-address-action address))
+    (make-highlight-address-message address)
+    (reacl/return :app-state (highlight-address public-state address))
 
-    unmark-address-message?
-    (reacl/return :action (make-unhovered-address-action))
+    (make-unhighlight-address-message address)
+    (reacl/return :app-state (unhighlight-address public-state address))
 
-    unblur-message?
-    (reacl/return :app-state initial-state)
-
-    (make-activate-search-result-message address)
+    clear-result-message?
     (reacl/return
-      :action (make-click-address-action address)
-      :action (make-unhovered-address-action)
-      :app-state initial-state)
+      :local-state initial-state
+      :app-state (clear-result public-state))
+
+    (make-set-result-message address)
+    (reacl/return
+      :app-state (set-result public-state address)
+      :local-state initial-state)
 
     (make-typed-message content)
-    (let [id (str (gensym))]
-      (cond
+    (apply reacl/return
+      :app-state initial-public-state
+      (let [id (str (gensym))]
+        (cond
 
-        (empty? content)
-        (reacl/return
-          :app-state initial-state
-          :action (make-unhovered-address-action))
+          (empty? content)
+          [:local-state initial-state]
 
-        (not-min-length? content)
-        (reacl/return
-          :app-state (-> local-state
-                       (search-field-state-content content)
-                       (search-field-state-status min-character-error))
-          :action (make-unhovered-address-action))
+          (not-min-length? content)
+          [:local-state (-> local-state
+                          (search-field-state-content content)
+                          (search-field-state-status min-character-error))]
 
-        (ripple-address? content)
-        (reacl/return
-          :action (make-search-action [content] (make-result-callback this id))
-          :action (make-unhovered-address-action)
-          :app-state (-> local-state
-                       (search-field-state-content content)
-                       (search-field-state-status (make-waiting id))))
+          (ripple-address? content)
+          [:action (make-search-action [content] (make-result-callback this id))
+           :local-state (-> local-state
+                          (search-field-state-content content)
+                          (search-field-state-status (make-waiting id)))]
 
-        :default
-        (let [addresses (bithomp/addresses-by-name content)]
-          (if (not-empty addresses)
-            (reacl/return :app-state
-              (-> local-state
-                (search-field-state-content content)
-                (search-field-state-status (make-waiting id)))
-              :action (make-unhovered-address-action)
-              :action (make-search-action addresses (make-result-callback this id)))
-            (reacl/return :app-state
-              (-> local-state
-                (search-field-state-content content)
-                (search-field-state-status address-not-found-error)))))))
-    )
-  )
+          :default
+          (let [addresses (bithomp/addresses-by-name content)]
+            (if (not-empty addresses)
+              [:local-state (-> local-state
+                              (search-field-state-content content)
+                              (search-field-state-status (make-waiting id)))
+               :action (make-search-action addresses (make-result-callback this id))]
+              [:local-state
+               (-> local-state
+                 (search-field-state-content content)
+                 (search-field-state-status address-not-found-error))])))))
+
+    :default "12"
+    ))
 
 
 (reacl/defclass results this result-entries [parent]
@@ -140,9 +181,10 @@
     (map-indexed
      (fn [idx result]
        (dom/keyed (str idx)
-         (let [onclick-handler #(reacl/send-message! parent (make-activate-search-result-message result))
-               onover-handler  #(reacl/send-message! parent (make-mark-address-message result))
-               onout-handler   #(reacl/send-message! parent (make-unmark-address-message result))]
+         (let [send-parent! (fn [m] #(reacl/send-message! parent m))
+               onclick-handler (send-parent! (make-set-result-message result))
+               onover-handler  (send-parent! (make-highlight-address-message result))
+               onout-handler   (send-parent! (make-unhighlight-address-message result))]
            (dom/li {:onclick      onclick-handler
                     :onmouseenter onover-handler
                     :onmouseleave onout-handler}
@@ -163,20 +205,31 @@
       (dom/div {:class "error-info-back"}
         (dom/img {:src "images/clear.png"})
         (dom/span
-          {:onclick #(reacl/send-message! this (make-unblur-message))}
+          {:onclick #(reacl/send-message! this (make-clear-result-message))}
           "Clear search")))))
 
 
-(reacl/defclass search-field this local-state [hovered clicked]
+
+(reacl/defclass search-field this app-state []
 
   refs [field]
 
+  local-state [local-state initial-state]
+
   render
-  (let [?content     (search-field-state-content local-state)
-        content      (bithomp/get-name (or hovered ?content clicked ""))
-        clicked?     (and clicked (not (or hovered ?content)))
-        searching?   (not (or clicked hovered (not ?content)))
-        status-field (search-field-state-status local-state)]
+  (let [?highlighted (st/match highlighted-t (search-field-public-state-highlighted app-state)
+                   none-highlighted? nil
+                   (make-highlighted addr) addr)
+        ?result (st/match result-t (search-field-public-state-result app-state)
+                  no-result? nil
+                  (make-search-result addr) addr)
+        content    (bithomp/get-name
+                    (or ?highlighted
+                      (search-field-state-content local-state)
+                      ?result
+                      ""))
+        searching? (waiting? (search-field-state-status local-state))
+        status (search-field-state-status local-state)]
 
     (dom/div {:class "search-field fade-in"}
 
@@ -185,30 +238,29 @@
          :id          "sf"
          :onchange    #(reacl/send-message! this
                          (make-typed-message (.-value (reacl/get-dom field))))
-         :onblur      #(js/window.setTimeout
-                         (fn [] (reacl/send-message! this (make-unblur-message))) 100)
          :ref         field
          :value       content})
 
 
       (dom/div {:class "search-state"}
         (cond
-          clicked?
+          ?result
           (dom/img {:src "images/done.png"})
 
-          searching?
+          ?highlighted
+          (dom/img {:src "images/visibility.png"})
+
+          (search-field-state-content local-state)
           (dom/img {:src "images/search.png"})
-
-          hovered
-          (dom/img {:src "images/visibility.png"})))
+          ))
 
 
-      (st/match status status-field
+      (st/match status-t status
 
-        (make-error _ error-msg)
+        (make-error error-msg)
         (show-error this error-msg)
 
-        (make-success _ address)
+        (make-success address)
         (dom/div {:class "search-dropdown fade-in"}
           (scrollpane/pane
             false
@@ -225,25 +277,18 @@
 
   handle-message
   (fn [msg]
-    (st/match message msg
+    (st/match message-t msg
 
-      interaction-message?
-      (handle-interaction-message this local-state msg)
+      interaction-message-t?
+      (handle-interaction-message this app-state local-state msg)
 
       (make-search-result-failure-message id)
       (if (waiting-with-id? local-state id)
-        (reacl/return
-          :app-state (search-field-state-status local-state (address-not-found-error id))
-          :action (make-unhovered-address-action))
+        (reacl/return :local-state (search-field-state-status local-state address-not-found-error))
         (reacl/return))
 
       (make-search-result-success-message id results)
-      (if (waiting-with-id? local-state id)
-        (reacl/return :app-state
-          (search-field-state-status local-state (make-success id results)))
-        (reacl/return :app-state local-state))
-
-
-
-    )
-  ))
+      (do
+        (if (waiting-with-id? local-state id)
+          (reacl/return :local-state (search-field-state-status local-state (make-success results)))
+          (reacl/return))))))

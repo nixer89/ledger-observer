@@ -1,5 +1,6 @@
 (ns ledger-observer.components.inspector
   (:require [active.clojure.cljs.record :as rec :include-macros true]
+            [quick-type.core :as qt :include-macros true]
             [cljs.core.async :refer [<! >! go-loop go alt!]]
             [reacl2.core :as reacl :include-macros true]
             [ledger-observer.visualization.data :as data]
@@ -8,6 +9,12 @@
             [ledger-observer.visualization.materials :as colors]
             [reacl2.dom :as dom :include-macros true]))
 
+
+(qt/def-type inspector-state-t
+  [(state [txs])
+   (none [])])
+
+(def initial-state (make-state []))
 
 (defn type->rgb-string* [a]
   (let [[r g b] (cond
@@ -129,10 +136,10 @@
           "Inspect address on bithomp")))))
 
 
-(reacl/defclass inspector this transactions []
+(reacl/defclass inspector this app-state []
 
   render
-  (if (empty? transactions)
+  (if (empty? (state-txs app-state))
     (dom/div {:class "inspect-box"}
       (dom/span {:class "info fade-in"}
         "Waiting for transactions..."))
@@ -140,5 +147,5 @@
      (scrollpane/pane
        false
        {:height "300px"}
-       txs transactions))))
+       txs (state-txs app-state)))))
 

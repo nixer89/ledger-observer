@@ -1,6 +1,8 @@
 (ns ledger-observer.visualization.app-interaction
   (:require [ledger-observer.visualization.data :as data]
             [ledger-observer.mailbox :as mailbox]
+            [quick-type.core :as qt :include-macros true]
+            [active.clojure.sum-type :as st :include-macros true]
             [ledger-observer.visualization.animations :as animation]
             [active.clojure.cljs.record :as rec :include-macros true]))
 
@@ -10,6 +12,10 @@
 (rec/define-record-type ClickAddressMessage
   (make-click-address-message address) click-address-message?
   [address click-address-message-address])
+
+(rec/define-record-type UnclickAddressMessage
+  (make-unclick-address-message) unclick-address-message?
+  [])
 
 (rec/define-record-type HoveredAddressMessage
   (make-hovered-address-message address) hovered-address-message?
@@ -74,25 +80,25 @@
 
 
 
+(qt/def-type node-selected-t
+  [(no-node-selected [])
+   (node-selected-by-mouse-click [index animation])
+   (node-selected-by-app [index animation])])
 
-(rec/define-record-type NoNodeSelected (make-no-node-selected) no-node-selected? [])
-(def no-node-selected (make-no-node-selected))
-
-(rec/define-record-type NodeSelectedByMouseClick
-  (make-node-selected-by-mouse-click index animation ) node-selected-by-mouse-click?
-  [index node-selected-by-mouse-click-index
-   animation node-selected-by-mouse-click-animation])
-
+(def no-node-selected-inst (make-no-node-selected))
 
 (defn selected-node-index [s]
-  (cond
-    (node-selected-by-mouse-click? s)
-    (node-selected-by-mouse-click-index s)))
+  (st/match node-selected-t s
+    (make-node-selected-by-mouse-click index _) index
+    (make-node-selected-by-app index _) index
+    no-node-selected? nil))
 
 (defn selected-node-animation [m]
-  (cond
-    (node-selected-by-mouse-click? m)
-    (node-selected-by-mouse-click-animation m)))
+  (st/match node-selected-t m
+    (make-node-selected-by-mouse-click _ animation) animation
+    (make-node-selected-by-app _ animation) animation
+    no-node-selected? nil))
+
 
 (rec/define-record-type TxStatsState
   (make-tx-stats counter last-updated) tx-stats-state?
@@ -158,8 +164,8 @@
     (mailbox/make-mailbox)
     no-node-marked
     no-node-marked
-    no-node-selected
-    no-node-selected
+    no-node-selected-inst
+    no-node-selected-inst
     no-tx-marked
     (make-tx-stats 0 0)
     true))
@@ -173,9 +179,15 @@
     (node-marked-by-mouse-hover-animation node-marked animation)))
 
 (defn selected-node-put-animation [node-selected animation]
-  (cond
-    (node-selected-by-mouse-click? node-selected)
-    (node-selected-by-mouse-click-animation node-selected animation)))
+  (st/match node-selected-t node-selected
+    node-selected-by-mouse-click?
+    (node-selected-by-mouse-click-animation node-selected animation)
+
+    node-selected-by-app?
+    (node-selected-by-app-animation node-selected animation)
+
+    no-node-selected?
+    :die))
 
 
 (defn get-marked-animation-value&step [interaction-state]
