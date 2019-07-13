@@ -39,6 +39,8 @@
    tx-stats
    info])
 
+(def inspector-txs-lens
+  (lens/>> app-state-inspector-state inspector/state-txs))
 
 (defn maybe-clicked-address [app-state]
   (-> app-state
@@ -68,10 +70,11 @@
 
 
 (defn set-clicked-address [app-state address]
-  (lens/overhaul
-    app-state
-    app-state-search-state
-    #(search-data/set-result % address)))
+  (-> app-state
+   (lens/overhaul
+     app-state-search-state
+     #(search-data/set-result % address))
+   (inspector-txs-lens [])))
 
 
 (defn unset-clicked-address [app-state]
@@ -108,7 +111,7 @@
       (st/match search-data/result-t selected-new
 
         search-data/no-result?
-        [:action (make-unselect-node-action (search-data/result-result selected-old))]
+        [:action (make-unselect-node-action (search-data/result-address selected-old))]
 
         (search-data/make-result address)
         [:action (make-select-node-action address)
@@ -227,8 +230,6 @@
     (if (= address (data/new-transaction-event-from event)) "Issuer" "Attendee")
     (data/new-transaction-event-success? event)))
 
-(def inspector-txs-lens
-  (lens/>> app-state-inspector-state inspector/state-txs))
 
 (rec/define-record-type TickMeEverySecondAction
   (make-tick-me-every-second-action receiver) tick-me-every-second-action?
@@ -260,7 +261,6 @@
   (make-hide-info-message) hide-info-message? [])
 
 #_(defn baseline-grid
-  
   []
   (apply dom/div {:style
                   {
@@ -452,9 +452,13 @@
             ;; check if new hovered action
             ?highlighted-action (maybe-make-hovered-action current-search-state search-state)
             ?actions (concat ?selected-action ?highlighted-action
-                       [:action (app-state->fetch-filter-action app-state this)])]
+                       [:action (app-state->fetch-filter-action app-state this)])
+            new-app-state (-> (if (not-empty ?selected-action)
+                                (inspector-txs-lens app-state [])
+                                app-state)
+                            (app-state-search-state search-state))]
         (if (empty? ?actions)
-          (reacl/return :app-state (app-state-search-state app-state search-state))
+          (reacl/return :app-state new-app-state)
           (apply reacl/return :app-state (app-state-search-state app-state search-state) ?actions)))
 
       (hover-address-message? msg)

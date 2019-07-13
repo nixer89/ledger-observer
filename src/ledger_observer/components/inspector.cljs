@@ -142,7 +142,7 @@
   (if (empty? (state-txs app-state))
     (dom/div {:class "inspect-box"}
       (dom/span {:class "info fade-in"}
-        "Waiting for transactions..."))
+        "Collecting transactions..."))
    (dom/div
      (scrollpane/pane
        false

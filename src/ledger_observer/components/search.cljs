@@ -27,6 +27,8 @@
 
 (defn handle-typed-message [receiver public-state local-state content]
   (apply reacl/return
+
+    ;; on every type, we reset active results
     :app-state d/initial-public-state
 
     (let [id (str (gensym))
@@ -41,7 +43,7 @@
                         (d/with-content content)
                         (d/with-min-character-error))]
 
-        (ripple-address? content)
+        (ripple-address? content) ; when content is a ripple address, we search the graph
         [:action (d/make-search-action [content] callbacks)
          :local-state (-> local-state
                         (d/with-content content)
@@ -50,6 +52,8 @@
         :default
         (let [addresses (bithomp/addresses-by-name content)]
           (if (not-empty addresses)
+            ;; if addresses are found in bithomp name storage,
+            ;; we need to check if they are present in the current visualization
             [:local-state (-> local-state
                             (d/with-content content)
                             (d/with-waiting id))
@@ -77,28 +81,31 @@
         (reacl/return)))))
 
 
-(defn handle-interaction-message [receiver public-state local-state msg]
+(defn handle-interaction-message [receiver state local-state msg]
 
   (st/match d/interaction-message-t msg
 
     (d/make-highlight-address-message address)
-    (reacl/return :app-state (d/highlight-address public-state address))
+    (reacl/return :app-state (d/highlight-address state address))
 
     (d/make-unhighlight-address-message address)
-    (reacl/return :app-state (d/unhighlight-address public-state address))
+    (reacl/return :app-state (d/unhighlight-address state address))
 
     d/clear-result-message?
     (reacl/return
       :local-state d/initial-state
-      :app-state (d/clear-result public-state))
+      :app-state (d/clear-result state))
 
     (d/make-set-result-message address)
     (reacl/return
-      :app-state (d/set-result public-state address)
+      :app-state (d/set-result state address)
+      ;; local-state is resetred, to allow fresh user-input
+      ;; current content of the dom-input field is set to result
       :local-state d/initial-state)
 
     (d/make-typed-message content)
-    (handle-typed-message receiver public-state local-state content)))
+    (handle-typed-message receiver state local-state content)))
+
 
 
 (defn result-entry [name result]
@@ -107,6 +114,7 @@
       (dom/div {:class "result-entry-name"} name)
       (dom/div {:class "result-entry-info"} result))
     (dom/img {:src "images/done.png"})))
+
 
 
 (reacl/defclass results this result-entries [parent]
@@ -151,6 +159,10 @@
   (let [?highlighted         (d/show-highlighted (d/state-highlighted app-state))
         ?result              (d/show-result (d/state-result app-state))
         ?local-state-content (d/local-state-content local-state)
+        ;; the actual displayed content is selected by highlighted, since
+        ;; all hovered in the visualization should immediately displayed,
+        ;; then the local state content, since user-input (residing in local-state)
+        ;; should be displayed if present, and finally a active result. Else empty-string.
         string-content       (or ?highlighted ?local-state-content  ?result "")
         content              (bithomp/get-name string-content)
         searching?           (d/is-waiting? local-state)
@@ -158,13 +170,14 @@
 
     (dom/div {:class "search-field fade-in"}
 
+      ;; main input field
       (dom/input
         {:placeholder "Search for address or name"
          :onchange    #(reacl/send-message! this (d/make-typed-message (.-value (reacl/get-dom field))))
          :ref         field
          :value       content})
 
-
+      ;; search indicator icon 
       (dom/div {:class "search-state"}
         (cond
           ?result
@@ -177,18 +190,19 @@
           (dom/img {:src "images/search.png"})))
 
 
+      ;; rendering status
       (st/match d/status-t status
 
         (d/make-error error-msg)
         (show-error this error-msg)
 
-        (d/make-success address)
+        (d/make-success addresses)
         (dom/div {:class "search-dropdown fade-in"}
           (scrollpane/pane false
             {:color    "white"    :height "350px"
              :position "absolute" :top    0 :left 0}
             results
-            address
+            addresses
             this))
 
         d/idle? nil
