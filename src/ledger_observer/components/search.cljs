@@ -10,16 +10,12 @@
             [reacl2.dom :as dom :include-macros true]))
 
 
-
-
-
 (defn make-result-callback [ref id]
   (fn [res]
     (reacl/send-message! ref
       (if (not-empty res)
        (d/make-result-success-message id res)
        (d/make-result-failure-message id)))))
-
 
 
 (defn not-min-length? [content] (>= 2 (count content)))
@@ -33,7 +29,8 @@
   (apply reacl/return
     :app-state d/initial-public-state
 
-    (let [id (str (gensym))]
+    (let [id (str (gensym))
+          callbacks (make-result-callback receiver id)]
       (cond
 
         (empty? content)
@@ -41,26 +38,43 @@
 
         (not-min-length? content)
         [:local-state (-> local-state
-                        (d/local-state-content content)
-                        (d/local-state-status d/min-character-error))]
+                        (d/with-content content)
+                        (d/with-min-character-error))]
 
         (ripple-address? content)
-        [:action (d/make-search-action [content] (make-result-callback receiver id))
+        [:action (d/make-search-action [content] callbacks)
          :local-state (-> local-state
-                        (d/local-state-content content)
-                        (d/local-state-status (d/make-waiting id)))]
+                        (d/with-content content)
+                        (d/with-waiting id))]
 
         :default
         (let [addresses (bithomp/addresses-by-name content)]
           (if (not-empty addresses)
             [:local-state (-> local-state
-                            (d/local-state-content content)
-                            (d/local-state-status (d/make-waiting id)))
-             :action (d/make-search-action addresses (make-result-callback receiver id))]
+                            (d/with-content content)
+                            (d/with-waiting id))
+             :action (d/make-search-action addresses callbacks)]
             [:local-state
              (-> local-state
-               (d/local-state-content content)
-               (d/local-state-status d/address-not-found-error))]))))))
+               (d/with-content content)
+               (d/with-address-not-found-error))]))))))
+
+
+
+(defn handle-callback-message [local-state msg]
+
+  (st/match d/callback-message-t msg
+
+    (d/make-result-failure-message id)
+    (if (d/waiting-with-id? local-state id)
+      (reacl/return :local-state (d/with-address-not-found-error local-state))
+      (reacl/return))
+
+    (d/make-result-success-message id results)
+    (do
+      (if (d/waiting-with-id? local-state id)
+        (reacl/return :local-state (d/with-results local-state results))
+        (reacl/return)))))
 
 
 (defn handle-interaction-message [receiver public-state local-state msg]
@@ -87,6 +101,14 @@
     (handle-typed-message receiver public-state local-state content)))
 
 
+(defn result-entry [name result]
+  (dom/div {:class "result-entry"}
+    (dom/div {:class "result-entry-details"}
+      (dom/div {:class "result-entry-name"} name)
+      (dom/div {:class "result-entry-info"} result))
+    (dom/img {:src "images/done.png"})))
+
+
 (reacl/defclass results this result-entries [parent]
   render
   (dom/ul
@@ -101,13 +123,10 @@
                     :onmouseenter onover-handler
                     :onmouseleave onout-handler}
              (if-let [name (bithomp/get-name result)]
-               (dom/div {:class "result-entry"}
-                (dom/div {:class "result-entry-details"}
-                  (dom/div {:class "result-entry-name"} name)
-                  (dom/div {:class "result-entry-info"} result))
-                (dom/img {:src "images/done.png"}))
+               (result-entry name result)
                (dom/div {:class "result-entry"} "Inspect address"))))))
      result-entries)))
+
 
 (defn show-error [this error-msg]
   (dom/div {:class "search-dropdown fade-in"}
@@ -165,8 +184,7 @@
 
         (d/make-success address)
         (dom/div {:class "search-dropdown fade-in"}
-          (scrollpane/pane
-            false
+          (scrollpane/pane false
             {:color    "white"    :height "350px"
              :position "absolute" :top    0 :left 0}
             results
@@ -185,13 +203,6 @@
       d/interaction-message-t?
       (handle-interaction-message this app-state local-state msg)
 
-      (d/make-result-failure-message id)
-      (if (d/waiting-with-id? local-state id)
-        (reacl/return :local-state (d/local-state-status local-state d/address-not-found-error))
-        (reacl/return))
-
-      (d/make-result-success-message id results)
-      (do
-        (if (d/waiting-with-id? local-state id)
-          (reacl/return :local-state (d/local-state-status local-state (d/make-success results)))
-          (reacl/return))))))
+      d/callback-message-t?
+      (handle-callback-message local-state msg)
+)))

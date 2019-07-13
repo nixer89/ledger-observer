@@ -19,8 +19,17 @@
    (success [address])
    (idle [])])
 
+
 ;; constant for idle
 (def idle-inst (make-idle))
+
+
+
+(def address-not-found-error
+  (make-error "Address or name not found!"))
+
+(def min-character-error
+  (make-error "Please enter at least two characters"))
 
 
 ;; Represents the state of a search field. Consists of content,
@@ -29,6 +38,21 @@
 
 (defn is-waiting? [local-state]
   (waiting? (local-state-status local-state)))
+
+(defn with-min-character-error [local-state]
+   (local-state-status local-state min-character-error))
+
+(defn with-address-not-found-error [local-state]
+  (local-state-status local-state address-not-found-error))
+
+(defn with-content [local-state content]
+  (local-state-content local-state content))
+
+(defn with-results [local-state results]
+  (local-state-status local-state (make-success results)))
+
+(defn with-waiting [local-state id]
+  (local-state-status local-state (make-waiting id)))
 
 (qt/def-type result-t
   [(no-result [])
@@ -55,22 +79,25 @@
 (qt/def-record state [highlighted result])
 
 
-(defn highlight-address [public-state address]
-  (state-highlighted public-state (make-highlighted address)))
+(defn highlight-address [state address]
+  (state-highlighted state
+   (if address
+     (make-highlighted address)
+     none-highlighted-inst)))
 
 (defn unhighlight-address [public-state address]
   (state-highlighted public-state none-highlighted-inst))
 
-(defn clear-result [public-state]
-  (state-result public-state no-result-inst))
+(defn clear-result [state]
+  (state-result state no-result-inst))
 
-(defn set-result [public-state address]
-  (state-result public-state (make-result address)))
-
-
+(defn set-result [state address]
+  (state-result state (make-result address)))
 
 
-(qt/def-type callback-message
+
+
+(qt/def-type callback-message-t
   [(result-failure-message [id])
    (result-success-message [id address])])
 
@@ -83,7 +110,7 @@
 
 (qt/def-type message-t
   [interaction-message-t
-   callback-message])
+   callback-message-t])
 
 (qt/def-type action-t
   [(search-action [addresses callback])])
@@ -100,9 +127,3 @@
   (let [?waiting (local-state-status local-state)]
     (and (waiting? ?waiting) (= (waiting-id ?waiting) id))))
 
-
-(def address-not-found-error
-  (make-error "Address or name not found!"))
-
-(def min-character-error
-  (make-error "Please enter at least two characters"))

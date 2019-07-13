@@ -41,50 +41,52 @@
 
 
 (defn maybe-clicked-address [app-state]
-  (let [?addr (-> app-state
-               app-state-search-state
-               search-data/state-result)]
-    (st/match search-data/result-t ?addr
-      (search-data/make-result addr) addr
-      search-data/no-result? nil)))
+  (-> app-state
+    app-state-search-state
+    search-data/state-result
+    search-data/show-result))
 
 
 (defn maybe-hovered-address [app-state]
-  (let [?highlighted (-> app-state
+  (-> app-state
+    app-state-search-state
+    search-data/state-highlighted
+    search-data/show-highlighted))
 
-                       app-state-search-state
-               search-data/state-highlighted)]
-    (st/match search-data/highlighted-t ?highlighted
-      (search-data/make-highlighted addr) addr
-      search-data/none-highlighted? nil)))
 
-(def set-hovered-address-lens (lens/>> app-state-search-state search-data/state-highlighted))
 (defn set-hovered-address [app-state address]
-  (set-hovered-address-lens app-state
-    (if address
-      (search-data/make-highlighted address)
-      search-data/none-highlighted-inst)))
+  (lens/overhaul
+    app-state
+    app-state-search-state
+    #(search-data/highlight-address % address)))
 
 (defn unset-hovered-address [app-state]
-  (set-hovered-address-lens app-state search-data/none-highlighted-inst)
-  )
+  (lens/overhaul
+    app-state
+    app-state-search-state
+    #(search-data/highlight-address % nil)))
 
-(def set-clicked-address-lens (lens/>> app-state-search-state search-data/state-result))
+
 (defn set-clicked-address [app-state address]
-  (-> app-state
-    (app-state-inspector-state inspector/initial-state)
-    (set-clicked-address-lens (search-data/make-result address))))
+  (lens/overhaul
+    app-state
+    app-state-search-state
+    #(search-data/set-result % address)))
+
 
 (defn unset-clicked-address [app-state]
-  (-> app-state
-    (set-clicked-address-lens search-data/no-result-inst)
-    (app-state-inspector-state inspector/initial-state)))
+  (lens/overhaul
+    app-state
+    app-state-search-state
+    #(search-data/clear-result %)))
+
 
 (qt/def-type color-node-action-t
   [(highlight-node-action [address])
    (unhighlight-node-action [])
    (select-node-action [address])
    (unselect-node-action [address])])
+
 
 
 (defn maybe-make-hovered-action [search-state-old search-state-new]
@@ -95,6 +97,7 @@
       (st/match search-data/highlighted-t highlighted-new
         search-data/none-highlighted? [:action (make-unhighlight-node-action)]
         (search-data/make-highlighted address) [:action (make-highlight-node-action address)]))))
+
 
 
 (defn maybe-make-selected-action [search-state-old search-state-new]
@@ -108,7 +111,8 @@
         [:action (make-unselect-node-action (search-data/result-result selected-old))]
 
         (search-data/make-result address)
-        [:action (make-select-node-action address)]))))
+        [:action (make-select-node-action address)
+         :action (make-unhighlight-node-action)]))))
 
 
 
@@ -422,7 +426,7 @@
         :action (make-unselect-node-action (maybe-clicked-address app-state)))
 
 
-      (set-address-message? msg) ;; with nil it is unset
+      (set-address-message? msg)
       (let [address  (set-address-message-address msg)]
         (reacl/return
           :app-state (set-clicked-address app-state address)
@@ -538,8 +542,7 @@
           (reacl/return))
 
       (make-select-node-action addr)
-      (do (send-renderer! app-state (ai/make-unhovered-address-message))
-          (send-renderer! app-state (ai/make-click-address-message addr))
+      (do (send-renderer! app-state (ai/make-click-address-message addr))
           (put-filter! app-state addr)
           (reacl/return))
 
