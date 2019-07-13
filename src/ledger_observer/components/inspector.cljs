@@ -114,10 +114,10 @@
 
   render
   (dom/div
-    (map (fn [t] (dom/keyed (tx-tid t) (tx t))) txs)))
+    (map (fn [t] (dom/keyed (tx-tid t) (tx (reacl/opt :reaction reacl/no-reaction)  t))) txs)))
 
 
-(reacl/defclass inspector-menu this [address unset-fn!]
+(reacl/defclass inspector-menu this none [address unset-fn!]
 
   render
   (dom/div
@@ -147,5 +147,7 @@
      (scrollpane/pane
        false
        {:height "300px"}
-       txs (state-txs app-state)))))
+       txs
+       (reacl/opt :reaction reacl/no-reaction)
+       (state-txs app-state)))))
 

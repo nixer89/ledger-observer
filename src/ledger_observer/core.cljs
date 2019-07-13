@@ -14,6 +14,7 @@
             [ledger-observer.delayed :as delayed]
             [ledger-observer.mailbox :as mailbox]
             [ledger-observer.components.search :as search]
+            [ledger-observer.components.search.data :as search-data]
             [ledger-observer.components.counter :as counter]
             [ledger-observer.components.inspector :as inspector]
             [ledger-observer.bithomp-userinfo :as bithomp]
@@ -42,41 +43,41 @@
 (defn maybe-clicked-address [app-state]
   (let [?addr (-> app-state
                app-state-search-state
-               search/search-field-public-state-result)]
-    (st/match search/result-t ?addr
-      (search/make-search-result addr) addr
-      search/no-result? nil)))
+               search-data/state-result)]
+    (st/match search-data/result-t ?addr
+      (search-data/make-result addr) addr
+      search-data/no-result? nil)))
 
 
 (defn maybe-hovered-address [app-state]
   (let [?highlighted (-> app-state
 
                        app-state-search-state
-               search/search-field-public-state-highlighted)]
-    (st/match search/highlighted-t ?highlighted
-      (search/make-highlighted addr) addr
-      search/none-highlighted? nil)))
+               search-data/state-highlighted)]
+    (st/match search-data/highlighted-t ?highlighted
+      (search-data/make-highlighted addr) addr
+      search-data/none-highlighted? nil)))
 
-(def set-hovered-address-lens (lens/>> app-state-search-state search/search-field-public-state-highlighted))
+(def set-hovered-address-lens (lens/>> app-state-search-state search-data/state-highlighted))
 (defn set-hovered-address [app-state address]
   (set-hovered-address-lens app-state
     (if address
-      (search/make-highlighted address)
-      search/none-highlighted-inst)))
+      (search-data/make-highlighted address)
+      search-data/none-highlighted-inst)))
 
 (defn unset-hovered-address [app-state]
-  (set-hovered-address-lens app-state search/none-highlighted-inst)
+  (set-hovered-address-lens app-state search-data/none-highlighted-inst)
   )
 
-(def set-clicked-address-lens (lens/>> app-state-search-state search/search-field-public-state-result))
+(def set-clicked-address-lens (lens/>> app-state-search-state search-data/state-result))
 (defn set-clicked-address [app-state address]
   (-> app-state
     (app-state-inspector-state inspector/initial-state)
-    (set-clicked-address-lens (search/make-search-result address))))
+    (set-clicked-address-lens (search-data/make-result address))))
 
 (defn unset-clicked-address [app-state]
   (-> app-state
-    (set-clicked-address-lens search/no-result-inst)
+    (set-clicked-address-lens search-data/no-result-inst)
     (app-state-inspector-state inspector/initial-state)))
 
 (qt/def-type color-node-action-t
@@ -87,26 +88,26 @@
 
 
 (defn maybe-make-hovered-action [search-state-old search-state-new]
-  (let [highlighted-new (search/search-field-public-state-highlighted search-state-new)
-        highlighted-old (search/search-field-public-state-highlighted search-state-old)]
+  (let [highlighted-new (search-data/state-highlighted search-state-new)
+        highlighted-old (search-data/state-highlighted search-state-old)]
     (if (= highlighted-new highlighted-old)
       []
-      (st/match search/highlighted-t highlighted-new
-        search/none-highlighted? [:action (make-unhighlight-node-action)]
-        (search/make-highlighted address) [:action (make-highlight-node-action address)]))))
+      (st/match search-data/highlighted-t highlighted-new
+        search-data/none-highlighted? [:action (make-unhighlight-node-action)]
+        (search-data/make-highlighted address) [:action (make-highlight-node-action address)]))))
 
 
 (defn maybe-make-selected-action [search-state-old search-state-new]
-  (let [selected-new (search/search-field-public-state-result search-state-new)
-        selected-old (search/search-field-public-state-result search-state-old)]
+  (let [selected-new (search-data/state-result search-state-new)
+        selected-old (search-data/state-result search-state-old)]
     (if (= selected-new selected-old)
       []
-      (st/match search/result-t selected-new
+      (st/match search-data/result-t selected-new
 
-        search/no-result?
-        [:action (make-unselect-node-action (search/search-result-result selected-old))]
+        search-data/no-result?
+        [:action (make-unselect-node-action (search-data/result-result selected-old))]
 
-        (search/make-search-result address)
+        (search-data/make-result address)
         [:action (make-select-node-action address)]))))
 
 
@@ -294,7 +295,7 @@
 
       (reacl/return
         :app-state (make-app-state render-interaction-mailbox render-tx-mailbox filter-mailboxes
-                     (make-not-connected-mode) search/initial-public-state inspector/initial-state (counter/make-counter-state 0 0)
+                     (make-not-connected-mode) search-data/initial-public-state inspector/initial-state (counter/make-counter-state 0 0)
                      info/nop)
         :action (make-tick-me-every-second-action this)
         :action (bithomp/make-fetch-users-info-action this)
@@ -352,9 +353,14 @@
        (when-let [?clicked-address (maybe-clicked-address app-state)]
          (dom/keyed ?clicked-address
            (dom/span
-             (inspector/inspector-menu ?clicked-address
+             (inspector/inspector-menu
+               (reacl/opt :reaction reacl/no-reaction)
+               nil
+               ?clicked-address
                #(reacl/send-message! this (make-unset-address-message)))
-             (inspector/inspector (app-state-inspector-state app-state))))))
+             (inspector/inspector
+               (reacl/opt :reaction reacl/no-reaction)
+               (app-state-inspector-state app-state))))))
 
 
 
@@ -441,7 +447,8 @@
             ?selected-action (maybe-make-selected-action current-search-state search-state)
             ;; check if new hovered action
             ?highlighted-action (maybe-make-hovered-action current-search-state search-state)
-            ?actions (concat ?selected-action ?highlighted-action)]
+            ?actions (concat ?selected-action ?highlighted-action
+                       [:action (app-state->fetch-filter-action app-state this)])]
         (if (empty? ?actions)
           (reacl/return :app-state (app-state-search-state app-state search-state))
           (apply reacl/return :app-state (app-state-search-state app-state search-state) ?actions)))
@@ -514,9 +521,9 @@
     (do (global-mouse/deregister! (global-mouse/deregister-mouse-handlers-action-id action))
         (reacl/return))
 
-    (search/search-action? action)
-    (let [callback (search/search-action-callback action)
-          address  (search/search-action-addresses action)]
+    (search-data/search-action? action)
+    (let [callback (search-data/search-action-callback action)
+          address  (search-data/search-action-addresses action)]
       (send-renderer! app-state (graph-layout/make-search-address-message address callback))
       (reacl/return))
 
@@ -548,7 +555,6 @@
     (do (bithomp/get-users-info)
         (reacl/return))
 
-
     (inspector/mark-tx-action? action)
     (let [from    (inspector/mark-tx-action-from action)
           targets (inspector/mark-tx-action-targets action)]
@@ -568,4 +574,4 @@
 
 (reacl/render-component (.getElementById ^js/Document js/document "renderer") app
                         (reacl/opt :reduce-action handle-actions)
-                        (make-app-state nil nil nil (make-default-mode) search/initial-public-state inspector/initial-state nil info/nop))
+                        (make-app-state nil nil nil (make-default-mode) search-data/initial-public-state inspector/initial-state nil info/nop))
