@@ -538,7 +538,8 @@
           (reacl/return))
 
       (make-select-node-action addr)
-      (do (send-renderer! app-state (ai/make-click-address-message addr))
+      (do (send-renderer! app-state (ai/make-unhovered-address-message))
+          (send-renderer! app-state (ai/make-click-address-message addr))
           (put-filter! app-state addr)
           (reacl/return))
 

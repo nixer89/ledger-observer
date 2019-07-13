@@ -18,7 +18,6 @@
             [ledger-observer.visualization.data :as data]))
 
 
-
 (defn tx->num [a]
   (cond
     (= a "OfferCreate") 0
@@ -546,7 +545,8 @@
         #(ai/select % (ai/make-node-selected-by-app idx (animations/linear 0 1 true)))))
 
     (ai/unclick-address-message? msg)
-    (mouse/unset-mouse-click render-state)
+    (lens/overhaul render-state data/render-state-interaction-state
+      #(ai/select % ai/no-node-selected-inst))
 
     (ai/hovered-address-message? msg)
     (let [idx (graph-layout/get-node-num-by-id (data/render-state-graph render-state)
@@ -555,10 +555,7 @@
         #(ai/mark-node-by-app % idx)))
 
     (ai/unhovered-address-message? msg)
-    (lens/overhaul
-      render-state
-      data/render-state-interaction-state
-      ai/unmark-node)
+    (lens/overhaul render-state data/render-state-interaction-state ai/unmark-node)
 
     (ai/app-mark-transaction-message? msg)
     (let [from    (ai/app-mark-transaction-message-from msg)
@@ -568,9 +565,6 @@
 
     (ai/app-unmark-transaction-message? msg)
     (u/render-state-marked-tx-state-lens render-state ai/no-tx-marked)
-
-
-
 
     :default
     render-state))

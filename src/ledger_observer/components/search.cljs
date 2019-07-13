@@ -141,9 +141,7 @@
 
       (dom/input
         {:placeholder "Search for address or name"
-         ;; :id          "sf"
-         :onchange    #(reacl/send-message! this
-                         (d/make-typed-message (.-value (reacl/get-dom field))))
+         :onchange    #(reacl/send-message! this (d/make-typed-message (.-value (reacl/get-dom field))))
          :ref         field
          :value       content})
 
