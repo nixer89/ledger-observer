@@ -27,6 +27,8 @@
 ;; which is typed content and a status of type status-t
 (qt/def-record local-state [content status])
 
+(defn is-waiting? [local-state]
+  (waiting? (local-state-status local-state)))
 
 (qt/def-type result-t
   [(no-result [])
@@ -34,12 +36,21 @@
 
 (def no-result-inst (make-no-result))
 
+(defn show-result [result]
+  (st/match result-t result
+    no-result? nil
+    (make-result address) address))
+
 (qt/def-type highlighted-t
   [(none-highlighted [])
    (highlighted [address])])
 
-
 (def none-highlighted-inst (make-none-highlighted))
+
+(defn show-highlighted [highlighted]
+  (st/match highlighted-t highlighted
+    none-highlighted? nil
+    (make-highlighted address) address))
 
 (qt/def-record state [highlighted result])
 

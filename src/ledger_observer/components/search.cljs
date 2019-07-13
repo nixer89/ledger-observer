@@ -129,25 +129,19 @@
   local-state [local-state d/initial-state]
 
   render
-  (let [?highlighted (st/match d/highlighted-t (d/state-highlighted app-state)
-                       d/none-highlighted? nil
-                       (d/make-highlighted addr) addr)
-        ?result      (st/match d/result-t (d/state-result app-state)
-                       d/no-result? nil
-                       (d/make-result addr) addr)
-        content      (bithomp/get-name
-                       (or ?highlighted
-                         (d/local-state-content local-state)
-                         ?result
-                         ""))
-        searching?   (d/waiting? (d/local-state-status local-state))
-        status       (d/local-state-status local-state)]
+  (let [?highlighted         (d/show-highlighted (d/state-highlighted app-state))
+        ?result              (d/show-result (d/state-result app-state))
+        ?local-state-content (d/local-state-content local-state)
+        string-content       (or ?highlighted ?local-state-content  ?result "")
+        content              (bithomp/get-name string-content)
+        searching?           (d/is-waiting? local-state)
+        status               (d/local-state-status local-state)]
 
     (dom/div {:class "search-field fade-in"}
 
       (dom/input
         {:placeholder "Search for address or name"
-         :id          "sf"
+         ;; :id          "sf"
          :onchange    #(reacl/send-message! this
                          (d/make-typed-message (.-value (reacl/get-dom field))))
          :ref         field
@@ -163,8 +157,7 @@
           (dom/img {:src "images/visibility.png"})
 
           (d/local-state-content local-state)
-          (dom/img {:src "images/search.png"})
-          ))
+          (dom/img {:src "images/search.png"})))
 
 
       (st/match d/status-t status
