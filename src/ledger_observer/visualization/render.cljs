@@ -31,9 +31,6 @@
 (def hover-size 20)
 (def normal-size 6)
 
-(def x-layout-position 0)
-(def y-layout-position 0)
-(def z-layout-position 0)
 
 (defn unpin-node! [render-state index]
   (graph-layout/unpin-node!
@@ -260,9 +257,9 @@
               z-num       (inc (inc (* 3 num)))
               layout-node (.getNodePosition layout id)]
 
-          (aset positions x-num (+ x-layout-position (.-x layout-node)))
-          (aset positions y-num (+ y-layout-position (.-y layout-node)))
-          (aset positions z-num (+ z-layout-position (.-z layout-node)))
+          (aset positions x-num (.-x layout-node))
+          (aset positions y-num (.-y layout-node))
+          (aset positions z-num (.-z layout-node))
 
           (cond
             (= clicked num)
@@ -332,12 +329,12 @@
       (fn [^js/Object link]
         (let [id          (.-id link)
               layout-link (.getLinkPosition layout id)
-              from-x      (+ (.-x (.-from layout-link)) x-layout-position)
-              from-y      (+ (.-y (.-from layout-link)) y-layout-position)
-              from-z      (+ (.-z (.-from layout-link)) z-layout-position)
-              to-x        (+ (.-x (.-to layout-link)) x-layout-position)
-              to-y        (+ (.-y (.-to layout-link)) y-layout-position)
-              to-z        (+ (.-z (.-to layout-link)) z-layout-position)
+              from-x      (.-x (.-from layout-link))
+              from-y      (.-y (.-from layout-link))
+              from-z      (.-z (.-from layout-link))
+              to-x        (.-x (.-to layout-link))
+              to-y        (.-y (.-to layout-link))
+              to-z        (.-z (.-to layout-link))
 
               alpha       0.8
               temperature (mu/js-kw-get link :temperature)
