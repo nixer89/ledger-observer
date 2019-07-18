@@ -19,19 +19,20 @@
   </head>
   <body>
 
-		  <script type="x-shader/x-vertex" id="vertexshader">
-			    attribute float size;
-			    attribute vec3 customColor;
-			    varying vec3 vColor;
-			    void main() {
-				      vColor = customColor;
-				      vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-				      gl_PointSize = size;
-				      gl_Position = projectionMatrix * mvPosition;
-			    }
+      <script type="x-shader/x-vertex" id="circle-vertexshader">
+			 attribute float size;
+			 attribute vec3 customColor;
+			 varying vec3 vColor;
+			 void main() {
+				   vColor = customColor;
+				   vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+				   gl_PointSize = size;
+				   gl_Position = projectionMatrix * mvPosition;
+			 }
 		  </script>
 
-		  <script type="x-shader/x-fragment" id="fragmentshader">
+
+		  <script type="x-shader/x-fragment" id="circle-fragmentshader">
 			    uniform vec3 color;
 			    uniform sampler2D texture;
 			    varying vec3 vColor;

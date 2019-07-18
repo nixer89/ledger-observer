@@ -55,7 +55,9 @@
         success? (= "tesSUCCESS" (get-in msg ["meta" "TransactionResult"]))
         tx-type  (get-in msg ["transaction" "TransactionType"])
         hash     (get-in msg ["transaction" "hash"])
-        targets  (vec (remove #{source} (set (parse-accounts-helper msg))))]
+        targets  (if (= tx-type "Payment")
+                   [(get-in msg ["transaction" "Destination"])]
+                   (vec (remove #{source} (set (parse-accounts-helper msg)))))]
     (data/make-new-transaction-event hash source targets tx-type success?)))
 
 #_(defn create-ripple-socket [] (ws/connect "ws://s1.ripple.com"))

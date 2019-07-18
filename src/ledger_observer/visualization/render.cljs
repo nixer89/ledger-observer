@@ -1,6 +1,7 @@
 (ns ledger-observer.visualization.render
   (:require cljsjs.three
             [active.clojure.cljs.record :as rec :include-macros true]
+            [quick-type.core :as qt :include-macros true]
             [clojure.core.async :as async]
             [active.clojure.lens :as lens :include-macros true]
             [three-controls :as Controls]
@@ -9,6 +10,7 @@
             [ledger-observer.visualization.materials :as materials]
             [ledger-observer.visualization.geometries :as geometries]
             [ledger-observer.visualization.animations :as animations]
+            [ledger-observer.visualization.data.animations :as animations-data]
             [ledger-observer.visualization.mouse :as mouse]
             #_[ledger-observer.visualization.stats :as stats]
             [ledger-observer.visualization.graph-layout :as graph-layout]
@@ -18,14 +20,17 @@
             [ledger-observer.visualization.data :as data]))
 
 
+(qt/def-record payment [initialized? temperature ref direction])
+
+
 (defn tx->num [a]
   (cond
     (= a "OfferCreate") 0
     (= a "OfferCancel") 1
-    (= a "Payment") 2
-    (clojure.string/starts-with? a "Escrow") 3
-    (= a "TrustSet") 4
-    :default 5))
+    (= a "Payment")     2
+    ;;(clojure.string/starts-with? a "Escrow") 3
+    (= a "TrustSet")    4
+    :default            5))
 
 (def click-size 20)
 (def hover-size 20)
@@ -52,7 +57,7 @@
 
 
 (defn set-renderer-full-width! [renderer]
-  (let [width (.-innerWidth js/window)
+  (let [width  (.-innerWidth js/window)
         height (.-innerHeight js/window)]
     (.setSize renderer width height)))
 
@@ -81,23 +86,23 @@
 
 (defn init-points []
   (let [max-points 100000
-        points geometries/point-geometry
+        points     geometries/point-geometry
 
         positions (js/Float32Array. (* 3 max-points) )
-        colors (js/Float32Array. (* 3 max-points))
-        sizes (js/Float32Array. (* max-points))
-        _ (.fill sizes normal-size)
+        colors    (js/Float32Array. (* 3 max-points))
+        sizes     (js/Float32Array. (* max-points))
+        _         (.fill sizes normal-size)
 
         _ (.addAttribute points "position" (js/THREE.BufferAttribute. positions 3))
         _ (.addAttribute points "customColor" (js/THREE.BufferAttribute. colors 3))
         _ (.addAttribute points "size" (js/THREE.BufferAttribute. sizes 1))
 
         material (js/THREE.ShaderMaterial.
-                  (clj->js {:uniforms {:color {:value (js/THREE.Color. 0xffffff)}
-                                       :texture {:value (.load (js/THREE.TextureLoader.) "images/circle.png")}}
-                            :vertexShader   (.-textContent (.getElementById js/document "vertexshader"))
-                            :fragmentShader (.-textContent (.getElementById js/document "fragmentshader"))
-                            :alphaTest 0.5}))
+                   (clj->js {:uniforms       {:color   {:value (js/THREE.Color. 0xffffff)}
+                                              :texture {:value (.load (js/THREE.TextureLoader.) "images/circle.png")}}
+                             :vertexShader   (.-textContent (.getElementById js/document "circle-vertexshader"))
+                             :fragmentShader (.-textContent (.getElementById js/document "circle-fragmentshader"))
+                             :alphaTest      0.5}))
 
         points-cloud (js/THREE.Points. points material)]
 
@@ -106,8 +111,8 @@
 
 (defn add-to-html [^js/THREE.WebGLRenderer renderer]
   (.appendChild
-   (.getElementById js/document "renderer-container")
-   (.-domElement renderer)))
+    (.getElementById js/document "renderer-container")
+    (.-domElement renderer)))
 
 (defn init-controls [camera]
   (Controls. camera (.getElementById js/document "renderer-container")))
@@ -133,23 +138,24 @@
   []
   (let [points-data (init-points)
         ;;globe-data (globe/init-globe)
-        scene (init-scene points-data)
-        camera (init-camera scene)]
+        scene       (init-scene points-data)
+        camera      (init-camera scene)]
     (data/make-render-state
-     (data/make-webgl-state scene camera (init-renderer) (init-controls camera))
-     points-data
-     (apply data/make-layout-data (graph-layout/layout))
-     (mailbox/make-mailbox)
-     ai/initial-state
-     (data/make-mouse-state 0)
-     0)))
+      (data/make-webgl-state scene camera (init-renderer) (init-controls camera))
+      points-data
+      (apply data/make-layout-data (graph-layout/layout))
+      animations-data/init
+      (mailbox/make-mailbox)
+      ai/initial-state
+      (data/make-mouse-state 0)
+      0)))
 
 (defn step-layout! [render-state]
   (graph-layout/step-layout!
-   (-> render-state
-       (data/render-state-layout-data)
-       (data/layout-layout-data)))
-   render-state)
+    (-> render-state
+      (data/render-state-layout-data)
+      (data/layout-layout-data)))
+  render-state)
 
 (defn app-marked-node-ids [render-state]
   (if-let [marked (u/render-state-marked-tx-state-lens render-state)]
@@ -228,7 +234,7 @@
       (data/render-state-interaction-state handled-interaction next-is))))
 
 (defn maybe-neighbours [render-state]
-  (let [marked   (u/render-state-node-marked-lens render-state)]
+  (let [marked (u/render-state-node-marked-lens render-state)]
     (if (ai/node-marked-by-mouse-hover? marked)
       (ai/node-marked-by-mouse-hover-neighbours marked)
       nil)))
@@ -236,25 +242,26 @@
 
 
 (defn update-node-positions [render-state]
-  (let [^js/Object graph (data/render-state-graph render-state)
+  (let [^js/Object graph        (data/render-state-graph render-state)
         ^js/Object points-cloud (data/render-state-points-cloud render-state)
-        positions    (data/render-state-points-positions render-state)
-        colors       (data/render-state-points-colors render-state)
-        layout       (data/render-state-layout render-state) clicked      (ai/selected-index
-                       (data/render-state-interaction-state render-state))
-        hovered      (ai/marked-index
-                       (data/render-state-interaction-state render-state))
-        ?neighbours  (maybe-neighbours render-state)
-        marked-txs   (app-marked-node-ids render-state)]
+        positions               (data/render-state-points-positions render-state)
+        colors                  (data/render-state-points-colors render-state)
+        layout                  (data/render-state-layout render-state) clicked (ai/selected-index
+                                                                                  (data/render-state-interaction-state render-state))
+        hovered                 (ai/marked-index
+                                  (data/render-state-interaction-state render-state))
+        ?neighbours             (maybe-neighbours render-state)
+        marked-txs              (app-marked-node-ids render-state)]
 
     (.forEachNode
       graph
       (fn [node]
         (let [id          (.-id node)
               num         (:num (.-data node))
-              x-num       (* 3 num)
-              y-num       (inc (* 3 num))
-              z-num       (inc (inc (* 3 num)))
+              num*3       (* 3 num)
+              x-num       num*3
+              y-num       (inc num*3)
+              z-num       (inc (inc num*3))
               layout-node (.getNodePosition layout id)]
 
           (aset positions x-num (.-x layout-node))
@@ -321,9 +328,9 @@
 
         ?hovered-state (u/render-state-node-marked-lens render-state)
         hovered-state? (ai/node-marked-by-mouse-hover? ?hovered-state)
-        ?hovered-txs (when hovered-state?
-                       (ai/node-marked-by-mouse-hover-neighbour-links ?hovered-state))
-        dec-tx-count? (= (mod (data/render-state-frame-counter render-state) 30) 0)]
+        ?hovered-txs   (when hovered-state?
+                         (ai/node-marked-by-mouse-hover-neighbour-links ?hovered-state))
+        dec-tx-count?  (= (mod (data/render-state-frame-counter render-state) 30) 0)]
     (.forEachLink
       graph
       (fn [^js/Object link]
@@ -338,36 +345,43 @@
 
               alpha       0.8
               temperature (mu/js-kw-get link :temperature)
-              c           (mu/js-kw-get link :count)]
-
+              c           (mu/js-kw-get link :count)
+              type        (mu/js-kw-get link :type)]
           (if-let [line (.-mesh link)]
             (do
               (let [vertices (.-vertices (.-geometry line))
-                   old-from (aget vertices 0)
-                   old-to   (aget vertices 1)]
-               (mu/set-coords! old-from from-x from-y from-z)
-               (mu/set-coords! old-to to-x to-y to-z)
-               (set! (.-verticesNeedUpdate
-                       (.-geometry line)) true)
+                    old-from (aget vertices 0)
+                    old-to   (aget vertices 1)]
+                (mu/set-coords! old-from from-x from-y from-z)
+                (mu/set-coords! old-to to-x to-y to-z)
+                (set! (.-verticesNeedUpdate (.-geometry line)) true)
 
+                (cond
 
-               (cond
-                 (< 0 temperature)
-                 (do (mu/js-kw-set! link :temperature (- temperature 0.7))
-                     (set! (.-material line)
-                       (if (mu/js-kw-get link :success)
-                        (case (mu/js-kw-get link :type)
-                          0 (materials/active-link-material-red c temperature)
-                          1 (materials/active-link-material-dark-red c temperature)
-                          2 (materials/active-link-material-blue c temperature)
-                          3 (materials/active-link-material-yellow c temperature)
-                          (materials/active-link-material-dark-blue c temperature))
-                        (materials/active-link-material-error-red c temperature)
-                        )))
-                 :default
-                 (do (mu/js-kw-set! link :temperature -1)
-                     (when dec-tx-count? (mu/js-kw-set! link :count (max 0 (dec c))))
-                     (set! (.-material line) (materials/base-line-material c)))))
+                  (= type 2)
+                  render-state
+
+                  (< 0 temperature)
+                  (do (mu/js-kw-set! link :temperature (- temperature 0.7))
+                      (set! (.-material line)
+                        (if (mu/js-kw-get link :success)
+                          (case type
+                            0 (materials/active-link-material-red c temperature)
+                            1 (materials/active-link-material-dark-red c temperature)
+                            2 (println "shouldn't be here")
+                            3 (materials/active-link-material-yellow c temperature)
+                            (materials/active-link-material-dark-blue c temperature))
+                          (materials/active-link-material-error-red c temperature))))
+
+                  ;; (< temperature 0)
+                  ;; remove the geometry from scene
+
+                  :default
+                  (do
+                    (mu/js-kw-set! link :type nil)
+                    (mu/js-kw-set! link :temperature -1)
+                    (when dec-tx-count? (mu/js-kw-set! link :count (max 0 (dec c))))
+                    (set! (.-material line) (materials/base-line-material c)))))
 
               ;; this overrides with marked color
               (when marked-state?
@@ -380,8 +394,7 @@
                 (set! (.-material line) materials/marked-line-material)))
 
             ;; else
-            (let [new-line (geometries/line-geometry
-                             [[from-x from-y from-z] [to-x to-y to-z]])]
+            (let [new-line (geometries/line-geometry [[from-x from-y from-z] [to-x to-y to-z]])]
               (set! (.-mesh link) new-line)
               (.add scene new-line)
               (set! (.-material new-line) (materials/base-line-material c))))
@@ -403,8 +416,8 @@
 
 (defn render-scene! [render-state]
   (let [renderer (data/render-state-renderer render-state)
-        scene (data/render-state-scene render-state)
-        camera (data/render-state-camera render-state)]
+        scene    (data/render-state-scene render-state)
+        camera   (data/render-state-camera render-state)]
     (.render renderer scene camera)
     render-state))
 
@@ -426,46 +439,61 @@
   (.update (u/render-state-tx-stats-state-lens render-state))
   render-state)
 
+(defn animate [render-state]
+  (lens/overhaul
+    render-state
+    data/render-state-animation-state
+    #(animations/animate % (data/render-state-scene render-state))))
+
 (defn step [render-state]
   (-> render-state
-      (step-layout!)
-      (update-node-positions)
-      #_(globe/update-globe!)
-      (update-link-positions)
-      (update-sizes)
-      ))
+    (step-layout!)
+    (update-node-positions)
+    #_(globe/update-globe!)
+    (update-link-positions)
+    (animate)
+    (update-sizes)))
 
 
-(defn animate-link! [^js/Object graph from to type success?]
-  (graph-layout/update-link-data graph from to :count u/inc-count 0)
-  (graph-layout/add-data-to-link graph from to :temperature 100)
-  (graph-layout/add-data-to-link graph from to :success success?)
-  (graph-layout/add-data-to-link graph from to :type (tx->num type)))
+(defn animate-link! [^js/Object render-state graph from to type success?]
+  (let [type (tx->num type)]
+    (graph-layout/update-link-data graph from to :count materials/inc-count 0)
+    (graph-layout/add-data-to-link graph from to :temperature 100)
+    (graph-layout/add-data-to-link graph from to :success success?)
+    (graph-layout/add-data-to-link graph from to :type type)
+    (if (= type 2)
+      (let [link-ref (.getLink graph from to)]
+        (lens/overhaul
+          render-state
+          data/render-state-animation-state
+          #(animations/add-payment-link-animation % link-ref 0)))
+      render-state)))
 
 
-(defn add-link-or-animate! [^js/Object graph from to type success?]
-  (when-not (graph-layout/link-exists? graph from to)
-    (.addLink graph from to))
-  (animate-link! graph from to type success?))
+(defn maybe-add-link&animate! [^js/Object render-state from to type success?]
+  (if (not= from to)
+    (let [graph (data/render-state-graph render-state)]
+      (when-not (graph-layout/link-exists? graph from to)
+        (.addLink graph from to))
+      (animate-link! render-state graph from to type success?))
+    render-state))
 
 (defn add-node-if-not-exists! [^js/Object graph id]
   (let [count (.getNodesCount graph)]
-   (when (not (graph-layout/node-exists? graph id))
-     (.addNode graph id {:num count}))))
+    (when (not (graph-layout/node-exists? graph id))
+      (.addNode graph id {:num count}))))
 
-(defn add-tx-to-graph! [render-state event]
-  (let [from (data/new-transaction-event-from event)
-        to (data/new-transaction-event-targets event)
-        type (data/new-transaction-event-type event)
+(defn add-tx-to-graph [render-state event]
+  (let [from     (data/new-transaction-event-from event)
+        to       (data/new-transaction-event-targets event)
+        type     (data/new-transaction-event-type event)
         success? (data/new-transaction-event-success? event)
 
         graph (data/render-state-graph render-state)]
-    (do
-      (add-node-if-not-exists! graph from)
-      (run! (fn [id]
+    (add-node-if-not-exists! graph from)
+    (reduce (fn [acc id]
               (add-node-if-not-exists! graph id)
-              (add-link-or-animate! graph from id type success?))
-            to))))
+              (maybe-add-link&animate! acc from id type success?)) render-state to)))
 
 
 (defn tx-event-handler [render-state tx-event]
@@ -473,10 +501,10 @@
 
     (data/new-transaction-event? tx-event)
     (let [num-tx (inc (lens/yank render-state u/tx-counter-lens))]
-      (add-tx-to-graph! render-state tx-event)
       (-> render-state
-       (u/tx-counter-lens num-tx)
-       (u/tx-stats-updated-lens (.getTime (js/Date.)))))
+        (add-tx-to-graph tx-event)
+        (u/tx-counter-lens num-tx)
+        (u/tx-stats-updated-lens (.getTime (js/Date.)))))
 
     :default
     render-state))
@@ -484,11 +512,11 @@
 
 (defn maybe-inform-app [render-state gui-callback]
   (let [interaction-state (data/render-state-interaction-state render-state)
-        needs-update? (u/render-state-interaction-needs-update-lens render-state)
-        marked (ai/interaction-state-node-marked interaction-state)
-        prev-marked (ai/interaction-state-previous-node-marked interaction-state)
-        selected (ai/interaction-state-node-selected interaction-state)
-        graph (data/render-state-graph render-state)]
+        needs-update?     (u/render-state-interaction-needs-update-lens render-state)
+        marked            (ai/interaction-state-node-marked interaction-state)
+        prev-marked       (ai/interaction-state-previous-node-marked interaction-state)
+        selected          (ai/interaction-state-node-selected interaction-state)
+        graph             (data/render-state-graph render-state)]
 
     (if needs-update?
       (do
@@ -509,7 +537,7 @@
 
 (defn maybe-inform-counter [render-state gui-callback]
   (let [last-updated (u/tx-stats-updated-lens render-state)
-        now (.getTime (js/Date.))
+        now          (.getTime (js/Date.))
         counter-call (data/gui-component-callbacks-tx-counter gui-callback)]
     (if (< 100 (- now last-updated))
       (do (counter-call (lens/yank render-state u/tx-counter-lens))
@@ -519,8 +547,8 @@
 
 (defn interact [render-state old-render-state gui-callback]
   (-> render-state
-      (maybe-inform-counter gui-callback)
-      (maybe-inform-app gui-callback)))
+    (maybe-inform-counter gui-callback)
+    (maybe-inform-app gui-callback)))
 
 
 (defn handle-app-message [render-state msg]
@@ -578,7 +606,7 @@
 
           ;; read next message from reacl app
           from-app-mailbox (u/render-state-from-app-mailbox-lens render-state)
-          ?app-message (or (mailbox/receive-next from-app-mailbox) ai/nop)]
+          ?app-message     (or (mailbox/receive-next from-app-mailbox) ai/nop)]
 
       (-> render-state
         (tx-event-handler ?tx-event)

@@ -1,11 +1,24 @@
 (ns ledger-observer.visualization.materials
-  (:require three
-            [ledger-observer.visualization.render-utils :as render-utils]))
+  (:require three))
 
 #_(def sprite (.load (three/TextureLoader.) "images/circle.svg"))
 
 
 
+(def max-count 80)
+(defn inc-count [v] (min max-count (+ 5 v)))
+(defn dec-count [v] (max 0 (dec v)))
+
+
+(defn gradient-material-1 [fromCol toCol]
+  (js/THREE.ShaderMaterial.
+    (clj->js {:uniforms       {:color1 {:value (js/THREE.Color. toCol)}
+                               :color2 {:value (js/THREE.Color. fromCol)}}
+              :vertexShader   (.-textContent (.getElementById js/document "gradient-vertexShader"))
+
+              :fragmentShader (.-textContent (.getElementById js/document "gradient-fragmentShader"))})))
+
+(def gradient-material (memoize gradient-material-1))
 
 (def yellow [240 162 2])
 (def blue [212 20 90])
@@ -25,8 +38,34 @@
        :linewidth   2
        :color       (let [[r g b] (map #(/ % 255) yellow)]
                      (three/Color. r g b))
-       :transparent false})))
+       :depthTest true
+       :polygonOffset true
+       :polygonOffsetFactor -0.2
+       :polygonOffsetUnits -0.05
+       :transparent true})))
 
+(def payment-transaction-material
+  (three/LineBasicMaterial.
+    (clj->js
+      {:blending            three/AdditiveBlending
+       :linewidth           3
+       :color               0xffffff
+       :vertexColors        true
+       :depthTest           true
+       :polygonOffset       true
+       :polygonOffsetFactor -3
+       :polygonOffsetUnits  -2
+       :transparent         true})))
+
+(def hide-line-material
+  (three/LineBasicMaterial.
+    (clj->js
+      {:blending    three/AdditiveBlending
+       :linewidth   1
+       :color       (three/Color. 0 0 0)
+       :transparent true
+       :opacity 0.0
+       })))
 
 
 (defn between-colors [[r g b] [base-r base-g base-b]]
@@ -52,7 +91,7 @@
       gb                           (/ base-b 255)]
 
   (defn base-line-material* [temp]
-    (let [ratio (/ temp render-utils/max-count)
+    (let [ratio (/ temp max-count)
           [r g b] (base->brighter-base ratio)]
       (three/LineBasicMaterial.
         (clj->js
@@ -77,7 +116,7 @@
 
     (fn [t-base t]
 
-      (let [ratio      (/ t-base render-utils/max-count)
+      (let [ratio      (/ t-base max-count)
             base-color (map #(* 255 %) (base->brighter-base ratio))
 
             base->col-fn (between-colors base-color col)
@@ -110,7 +149,7 @@
             :transparent false}))))))
 
 (defn error-link-material [t-base t]
-  (let [ratio      (/ t-base render-utils/max-count)
+  (let [ratio      (/ t-base max-count)
         base-color (map #(* 255 %) (base->brighter-base ratio))
         [r g b] ((between-colors error-red base-color) (/ (max 0 (- t 80)) 20))]
     (three/LineBasicMaterial.

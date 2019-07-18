@@ -64,11 +64,12 @@
   [mod-counter mouse-state-mod-counter])
 
 (rec/define-record-type RenderState
-  (make-render-state webgl-state points-data layout-data new-tx-mailbox interaction-state mouse-state
-    frame-counter) render-state?
+  (make-render-state webgl-state points-data layout-data animation-state
+                     new-tx-mailbox interaction-state mouse-state frame-counter) render-state?
   [webgl-state render-state-webgl-state
    points-data render-state-points-data
    layout-data render-state-layout-data
+   animation-state render-state-animation-state
    new-tx-mailbox render-state-new-tx-mailbox
    interaction-state render-state-interaction-state
    mouse-state render-state-mouse-state

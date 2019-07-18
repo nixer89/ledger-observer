@@ -10,3 +10,14 @@
 
 (defmacro js-kw-get [obj kw]
   `(aget ~obj ~(str kw)))
+
+(defmacro needs-update! [obj]
+  `(set! (.-verticesNeedUpdate (.-geometry ~obj)) true))
+
+
+(defmacro push-color! [obj color-hex]
+  `(.push (.-colors (.-geometry ~obj)) (js/THREE.Color. ~color-hex)))
+
+
+(defmacro set-material! [obj material]
+  `(set! (.-material ~obj) ~material))

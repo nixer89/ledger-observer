@@ -63,13 +63,8 @@
 (def render-state-interaction-needs-update-lens
   (lens/>>
     data/render-state-interaction-state
-    app-interaction/interaction-state-needs-update?)
-  )
+    app-interaction/interaction-state-needs-update?))
 
-
-(def max-count 80)
-(defn inc-count [v] (min max-count (+ 5 v)))
-(defn dec-count [v] (max 0 (dec v)))
 
 
 (defn increase-frame-counter [v]

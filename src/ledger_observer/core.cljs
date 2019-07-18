@@ -170,7 +170,6 @@
 (defn put-filter! [app-state address]
   (let [socket-mailbox (socket-mailbox-lens app-state)]
     (mailbox/send! socket-mailbox (socket/make-set-filter-address address))))
-
 (defn remove-filter! [app-state address]
   (let [socket-mailbox (socket-mailbox-lens app-state)]
     (mailbox/send! socket-mailbox (socket/make-unset-filter-address address))))
@@ -280,6 +279,7 @@
                                  :height "8px"}})]
               ) (range 0 130))))
 
+
 (reacl/defclass app this app-state [parent]
 
   component-did-mount
@@ -331,6 +331,7 @@
 
               )))
          ))
+
 
       (let [opt (reacl/opt :reduce-action
                   (fn [_ action]
