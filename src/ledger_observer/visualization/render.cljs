@@ -343,16 +343,14 @@
       (fn [^js/Object link]
         (let [id          (.-id link)
               layout-link (.getLinkPosition layout id)
-              from        (.-from layout-link)
-              to          (.-to layout-link)
+              from-x      (.-x (.-from layout-link))
+              from-y      (.-y (.-from layout-link))
+              from-z      (.-z (.-from layout-link))
+              to-x        (.-x (.-to layout-link))
+              to-y        (.-y (.-to layout-link))
+              to-z        (.-z (.-to layout-link))
 
-              from-x   (.-x from)
-              from-y   (.-y from)
-              from-z   (.-z from)
-              to-x     (.-x to)
-              to-y     (.-y to)
-              to-z     (.-z to)
-
+              alpha       0.8
               temperature (mu/js-kw-get link :temperature)
               c           (mu/js-kw-get link :count)
               type        (mu/js-kw-get link :type)]
@@ -382,6 +380,9 @@
                             3 (materials/active-link-material-yellow c temperature)
                             (materials/active-link-material-dark-blue c temperature))
                           (materials/active-link-material-error-red c temperature))))
+
+                  ;; (< temperature 0)
+                  ;; remove the geometry from scene
 
                   :default
                   (do

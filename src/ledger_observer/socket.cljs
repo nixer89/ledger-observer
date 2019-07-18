@@ -61,7 +61,9 @@
         success? (= "tesSUCCESS" (get-in msg ["meta" "TransactionResult"]))
         tx-type  (get-in msg ["transaction" "TransactionType"])
         hash     (get-in msg ["transaction" "hash"])
-        targets  (vec (remove #{source} (set (parse-accounts-helper msg))))]
+        targets  (if (= tx-type "Payment")
+                   [(get-in msg ["transaction" "Destination"])]
+                   (vec (remove #{source} (set (parse-accounts-helper msg)))))]
     [(if (> ln @ledger-number)
        (do
          (reset! ledger-number ln)
