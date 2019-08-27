@@ -19,6 +19,7 @@
     "dependencies": {
 	"three": "0.91.0",
         "ngraph.forcelayout3d": "0.0.16",
+        "ripple-lib-transactionparser": "0.7.1",
         "ngraph.graph": "0.0.14",
         "stats-js": "^1.0.0-alpha1",
         "three-orbitcontrols": "2.102.2",

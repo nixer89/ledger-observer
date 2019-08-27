@@ -51,11 +51,7 @@
        :linewidth           3
        :color               0xffffff
        :vertexColors        true
-       :depthTest           true
-       :polygonOffset       true
-       :polygonOffsetFactor -3
-       :polygonOffsetUnits  -2
-       :transparent         true})))
+       })))
 
 (def hide-line-material
   (three/LineBasicMaterial.
@@ -98,7 +94,14 @@
           {:blending    three/AdditiveBlending
            :linewidth   2
            :color       (three/Color. r g b)
-           :transparent false})))))
+
+           :transparent         true
+           :depthTest           true
+           :polygonOffset       true
+           :opacity             1
+           :polygonOffsetFactor 2
+           :polygonOffsetUnits  3
+           })))))
 
 (def base-line-material (memoize base-line-material*))
 
@@ -146,7 +149,7 @@
            {:blending    three/AdditiveBlending
             :linewidth   ratio
             :color       (three/Color. r g b)
-            :transparent false}))))))
+            :transparent true}))))))
 
 (defn error-link-material [t-base t]
   (let [ratio      (/ t-base max-count)

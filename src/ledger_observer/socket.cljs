@@ -50,6 +50,9 @@
    (some (fn [addr] (some #{addr} addresses)) (data/new-transaction-event-targets message))))
 
 (defn parse-accounts [json]
+  ;; (js/console.log (js/txparser.parseBalanceChanges (clj->js (get (read-json json) "meta"))))
+  ;; (js/console.log (count (js->clj (js/txparser.parseBalanceChanges (clj->js (get (read-json json) "meta"))))))
+
   (let [msg      (read-json json)
         source   (get-in msg ["transaction" "Account"])
         success? (= "tesSUCCESS" (get-in msg ["meta" "TransactionResult"]))

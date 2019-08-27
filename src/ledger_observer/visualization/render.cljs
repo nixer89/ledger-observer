@@ -342,14 +342,16 @@
       (fn [^js/Object link]
         (let [id          (.-id link)
               layout-link (.getLinkPosition layout id)
-              from-x      (.-x (.-from layout-link))
-              from-y      (.-y (.-from layout-link))
-              from-z      (.-z (.-from layout-link))
-              to-x        (.-x (.-to layout-link))
-              to-y        (.-y (.-to layout-link))
-              to-z        (.-z (.-to layout-link))
+              from        (.-from layout-link)
+              to          (.-to layout-link)
 
-              alpha       0.8
+              from-x   (.-x from)
+              from-y   (.-y from)
+              from-z   (.-z from)
+              to-x     (.-x to)
+              to-y     (.-y to)
+              to-z     (.-z to)
+
               temperature (mu/js-kw-get link :temperature)
               c           (mu/js-kw-get link :count)
               type        (mu/js-kw-get link :type)]
@@ -358,9 +360,10 @@
               (let [vertices (.-vertices (.-geometry line))
                     old-from (aget vertices 0)
                     old-to   (aget vertices 1)]
+
                 (mu/set-coords! old-from from-x from-y from-z)
                 (mu/set-coords! old-to to-x to-y to-z)
-                (set! (.-verticesNeedUpdate (.-geometry line)) true)
+                (mu/needs-update! line)
 
                 (cond
 
@@ -379,31 +382,28 @@
                             (materials/active-link-material-dark-blue c temperature))
                           (materials/active-link-material-error-red c temperature))))
 
-                  ;; (< temperature 0)
-                  ;; remove the geometry from scene
-
                   :default
                   (do
                     (mu/js-kw-set! link :type nil)
                     (mu/js-kw-set! link :temperature -1)
                     (when dec-tx-count? (mu/js-kw-set! link :count (max 0 (dec c))))
-                    (set! (.-material line) (materials/base-line-material c)))))
+                    (mu/set-material! line (materials/base-line-material c)))))
 
               ;; this overrides with marked color
               (when marked-state?
                 (let [from-id (.-fromId link)
                       to-id   (.-toId link)]
                   (when (must-be-marked? ?from ?targets [from-id to-id])
-                    (set! (.-material line) materials/marked-line-material))))
+                    (mu/set-material! line materials/marked-line-material))))
 
               (when (and hovered-state? (some #{(.-id link)} ?hovered-txs))
-                (set! (.-material line) materials/marked-line-material)))
+                (mu/set-material! line materials/marked-line-material)))
 
             ;; else
             (let [new-line (geometries/line-geometry [[from-x from-y from-z] [to-x to-y to-z]])]
               (set! (.-mesh link) new-line)
               (.add scene new-line)
-              (set! (.-material new-line) (materials/base-line-material c))))
+              (mu/set-material! new-line (materials/base-line-material c))))
           nil)))))
 
 
