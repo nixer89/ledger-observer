@@ -115,7 +115,13 @@
     (.-domElement renderer)))
 
 (defn init-controls [camera]
-  (Controls. camera (.getElementById js/document "renderer-container")))
+  (let [ret (Controls. camera (.getElementById js/document "renderer-container"))]
+    (set! (.-autoRotate ret) true)
+    (set! (.-autoRotateSpeed ret) 2)
+    (set! (.-screenSpacePanning ret) true)
+    (set! (.-minDistance ret) 10)
+    ret
+    ))
 
 (defn init-scene [points-data]
   (let [scene (js/THREE.Scene.)]
