@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import controls from 'three-trackballcontrols';
+import controls from 'three-orbitcontrols';
 import layout from 'ngraph.forcelayout3d';
 import graph from 'ngraph.graph';
 import stats from 'stats-js';
