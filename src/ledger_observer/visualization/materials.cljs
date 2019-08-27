@@ -51,11 +51,7 @@
        :linewidth           3
        :color               0xffffff
        :vertexColors        true
-       :depthTest           true
-       :polygonOffset       true
-       :polygonOffsetFactor -3
-       :polygonOffsetUnits  -2
-       :transparent         true})))
+       })))
 
 (def hide-line-material
   (three/LineBasicMaterial.
