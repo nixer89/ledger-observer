@@ -19,19 +19,23 @@
 (def minute 60)
 (def hour (* 60 60))
 
-(def minute-threshold (* 2 minute))
-(def hour-threshold (* 2 hour))
+(def minute-threshold (* 1.5 minute))
+(def hour-threshold (* 1.5 hour))
 
 (defn secs->unit [secs]
-  (cond
-    (> secs hour-threshold)
-    [(Math/round (/ secs hour)) "H"]
+  (let [[s u]
+        (cond
+          (> secs hour-threshold)
+          [(Math/round (/ secs hour)) "H"]
 
-    (> secs minute-threshold)
-    [(Math/round (/ secs minute)) "MIN"]
+          (> secs minute-threshold)
+          [(Math/round (/ secs minute)) "MIN"]
 
-    :default
-    [secs "SEC"]))
+          :default
+          [secs "SEC"])]
+    (if (> 10 s)
+      [(str "0" s) u]
+      [s u])))
 
 (defn tx->unit [tx]
   (if (>= tx 1000)

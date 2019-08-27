@@ -15,6 +15,7 @@
             [ledger-observer.mailbox :as mailbox]
             [ledger-observer.components.search :as search]
             [ledger-observer.components.search.data :as search-data]
+            [ledger-observer.components.settings :as settings]
             [ledger-observer.components.counter :as counter]
             [ledger-observer.components.inspector :as inspector]
             [ledger-observer.bithomp-userinfo :as bithomp]
@@ -37,6 +38,7 @@
    search-state
    inspector-state
    tx-stats
+   settings
    info])
 
 (def inspector-txs-lens
@@ -82,6 +84,8 @@
     app-state
     app-state-search-state
     #(search-data/clear-result %)))
+
+
 
 
 (qt/def-type color-node-action-t
@@ -279,6 +283,11 @@
                                  :height "8px"}})]
               ) (range 0 130))))
 
+(def visible? (lens/>> app-state-settings settings/settings-interface-visible?))
+(defn maybe-invisible [m app-state]
+  (if (visible? app-state)
+    (update m :class #(str % " animated-show"))
+    (update m :class #(str % " animated-hide"))))
 
 (reacl/defclass app this app-state [parent]
 
@@ -300,6 +309,7 @@
       (reacl/return
         :app-state (make-app-state render-interaction-mailbox render-tx-mailbox filter-mailboxes
                      (make-not-connected-mode) search-data/initial-public-state inspector/initial-state (counter/make-counter-state 0 0)
+                     settings/initial-state
                      info/nop)
         :action (make-tick-me-every-second-action this)
         :action (bithomp/make-fetch-users-info-action this)
@@ -312,12 +322,13 @@
 
     (dom/div
 
-
-      (dom/div {:class "logo-bottom-right"})
+      (dom/div (-> {:class "logo-bottom-right"}
+                 (maybe-invisible app-state)))
 
       #_(menu/menu (reacl/opt :reaction (reacl/reaction this #(make-show-info-message %)))
         (app-state-info app-state))
-      (dom/div {:class "right-menu"}
+      (dom/div (-> {:class "right-menu"}
+                 (maybe-invisible app-state))
        (dom/ul
          (dom/li
            {:style {:padding-right "10px"}
@@ -349,7 +360,8 @@
          (info/about-content opt)))
 
 
-      (dom/div {:class "sidebar" :style {:will-change "content"}}
+      (dom/div (-> {:class "sidebar" :style {:will-change "content"}}
+                 (maybe-invisible app-state))
 
        (search/search-field
          (reacl/opt :reaction (reacl/reaction this #(make-update-search-state-message %)))
@@ -368,10 +380,17 @@
                (app-state-inspector-state app-state))))))
 
 
+      (settings/panel
+        (reacl/opt
+          :reduce-action (fn [_ action] (reacl/return :action action))
+          :embed-app-state (fn [as settings] (app-state-settings as settings)))
+        (app-state-settings app-state))
 
-      (dom/div {:style {:position         "absolute"
-                        :width            "100%"
-                        :bottom           "40px"}}
+
+      (dom/div (-> {:style {:position "absolute"
+                            :width    "100%"
+                            :bottom   "40px"}}
+                 (maybe-invisible app-state))
         (cond
           (not-connected-mode? (app-state-connection app-state))
           (dom/div
@@ -385,8 +404,6 @@
                 :onmousemove (fn [^js/MouseEvent ev] (mouse/update-render-mouse-position! ev))
                 :onclick     (fn [_] (send-renderer! app-state (mouse/make-clicked-message)))})
 
-
-      #_(baseline-grid)
       ))
 
 
@@ -482,6 +499,9 @@
 (defn handle-actions [app-state action]
 
   (cond
+
+    (settings/settings-action-t? action)
+    (settings/handle-action action (app-state-render-interaction-mailbox app-state))
 
     (create-socket-action? action)
     (do (create-ripple-socket! (create-socket-action-handler action))
@@ -583,4 +603,4 @@
 
 (reacl/render-component (.getElementById ^js/Document js/document "renderer") app
                         (reacl/opt :reduce-action handle-actions)
-                        (make-app-state nil nil nil (make-default-mode) search-data/initial-public-state inspector/initial-state nil info/nop))
+                        (make-app-state nil nil nil (make-default-mode) search-data/initial-public-state inspector/initial-state nil settings/initial-state info/nop))

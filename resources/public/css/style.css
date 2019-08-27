@@ -295,7 +295,7 @@ input:focus:-ms-input-placeholder { color:transparent; }
 }
 
 .counter-components {
-    padding: 14px;
+    padding-left: 24px;
     font-size: 18px;
 }
 
@@ -670,3 +670,119 @@ input:focus:-ms-input-placeholder { color:transparent; }
     from { opacity: 0; }
     to   { opacity: 1; }
 }
+
+
+
+
+
+/* The switch - the box around the slider */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 20px;
+    height: 12px;
+}
+
+
+
+
+/* Hide default HTML checkbox */
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* The slider */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #111617;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 8px;
+    width: 8px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #255358;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #3a828c;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 0px #3a828c;
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(8px);
+    -ms-transform: translateX(8px);
+    transform: translateX(8px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+
+.settings {
+    position: absolute;
+    bottom: 100px;
+    left: 59px;
+    width: 260px;
+}
+
+.settings .checkbox > .switch {
+    margin-bottom: 2px;
+    vertical-align: middle;
+}
+
+.settings .checkbox > span {
+    margin-left: 20px;
+    color: #7d7d7d;
+    font-size: 15px;
+    margin-top: -10px;
+}
+
+.settings > ul {
+    padding: 0;
+    list-style-type: none
+}
+
+.settings > ul > li {
+    float: left;
+    border-bottom: 1px solid #3d3d3d;
+    padding: 10px 0;
+    width: 260px;
+}
+
+
+.animated-hide {
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s 1s, opacity 1s linear;
+}
+
+.animated-show {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 1s linear;
+}
+
