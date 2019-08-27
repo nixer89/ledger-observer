@@ -112,9 +112,9 @@
 (defn init-controls [camera]
   (let [ret (Controls. camera (.getElementById js/document "renderer-container"))]
     (set! (.-autoRotate ret) true)
-    (set! (.-autoRotateSpeed ret) 2)
+    (set! (.-autoRotateSpeed ret) 1.5)
     (set! (.-screenSpacePanning ret) true)
-    (set! (.-minDistance ret) 10)
+    (set! (.-minDistance ret) 20)
     ret
     ))
 
@@ -568,6 +568,9 @@
 
     (ai/app-unmark-transaction-message? msg)
     (u/render-state-marked-tx-state-lens render-state ai/no-tx-marked)
+
+    (ai/auto-rotate-message-t? msg)
+    (ai/handle-auto-rotate-message render-state msg)
 
     :default
     render-state))

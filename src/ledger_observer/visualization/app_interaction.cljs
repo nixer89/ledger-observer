@@ -3,6 +3,7 @@
             [ledger-observer.mailbox :as mailbox]
             [quick-type.core :as qt :include-macros true]
             [active.clojure.sum-type :as st :include-macros true]
+            [active.clojure.lens :as lens]
             [ledger-observer.visualization.animations :as animation]
             [active.clojure.cljs.record :as rec :include-macros true]))
 
@@ -107,7 +108,8 @@
 
 (rec/define-record-type InteractionState
   (make-interaction-state from-app-mailbox node-marked previous-node-marked
-    node-selected previous-node-selected tx-marked tx-stats needs-update?)
+    node-selected previous-node-selected tx-marked tx-stats needs-update?
+    auto-rotation?)
   interaction-state?
   [from-app-mailbox interaction-state-from-app-mailbox
    node-marked interaction-state-node-marked
@@ -117,7 +119,7 @@
    tx-marked interaction-state-tx-marked
    tx-stats interaction-state-tx-stats
    needs-update? interaction-state-needs-update?
-   ])
+   auto-rotation? interaction-state-auto-rotation?])
 
 
 (defn push [state lens1 lens2 new-value]
@@ -168,6 +170,7 @@
     no-node-selected-inst
     no-tx-marked
     (make-tx-stats 0 0)
+    true
     true))
 
 (defn marked-node-put-animation [node-marked animation]
@@ -224,3 +227,38 @@
 
       :default
       [nil nil interaction-state])))
+
+
+
+
+
+(qt/def-type auto-rotate-message-t
+  [(set-auto-rotate-message)
+   (unset-auto-rotate-message)])
+
+(def the-set-auto-rotate-message (make-set-auto-rotate-message))
+(def the-unset-auto-rotate-message (make-unset-auto-rotate-message))
+
+
+(def auto-rotation-lens
+  (lens/>> data/render-state-interaction-state interaction-state-auto-rotation?))
+
+(defn update-auto-rotate [render-state flag]
+  (let [camera (data/render-state-controls render-state)]
+    (set! (.-autoRotate camera) flag)
+    (lens/overhaul render-state auto-rotation-lens (constantly flag))))
+
+(defn set-auto-rotate [render-state]
+  (update-auto-rotate render-state true))
+
+(defn unset-auto-rotate [render-state]
+  (update-auto-rotate render-state false))
+
+(defn handle-auto-rotate-message [render-state msg]
+  (st/match auto-rotate-message-t msg
+
+    set-auto-rotate-message?
+    (set-auto-rotate render-state)
+
+    unset-auto-rotate-message?
+    (unset-auto-rotate render-state)))
