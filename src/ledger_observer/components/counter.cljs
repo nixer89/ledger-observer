@@ -1,6 +1,7 @@
 (ns ledger-observer.components.counter
   (:require [active.clojure.cljs.record :as rec :include-macros true]
             [reacl2.core :as reacl :include-macros true]
+            [ledger-observer.components.heartbeat :as heartbeat]
             [reacl2.dom :as dom :include-macros true]))
 
 
@@ -12,9 +13,12 @@
   [])
 
 (rec/define-record-type CounterState
-  (make-counter-state tx seconds) counter-state?
+  (make-counter-state tx seconds ledgers) counter-state?
   [tx counter-state-tx
-   seconds counter-state-seconds])
+   seconds counter-state-seconds
+   ledgers counter-state-ledgers])
+
+(def initial-state (make-counter-state 0 0 heartbeat/initial-state))
 
 (def minute 60)
 (def hour (* 60 60))
@@ -52,24 +56,25 @@
         tx-unit (tx->unit tx)]
     (dom/div
       {:class "counter-components fade-in"}
-      (dom/span {:style {:position :relative}}
-        (dom/div {:class "counter-component"}
+      #_(dom/div {:class "counter-component"}
           (dom/div {:class "counter-number"}
             time)
           (dom/div {:class "counter-text"}
             unit))
-        (dom/div {:class "counter-component"}
-          (dom/div {:class "counter-number"} tx-unit)
-          (dom/div {:class "counter-text"}
-            "#TX"))
-        (dom/div {:class "counter-component"}
-          (dom/div {:class "counter-number"}
-            (if (or
-                  (not secs)
-                  (not tx)
-                  (zero? secs))
-              0
-              (round-1 (/ tx secs))))
-          (dom/div
-            {:class "counter-text"}
-            "tx/s"))))))
+      (dom/div {:class "counter-component"}
+        (dom/div {:class "counter-number first"} tx-unit)
+        (dom/div {:class "counter-text"}
+          "#TX"))
+      (dom/div {:class "counter-component"}
+        (dom/div {:class "counter-number"}
+          (if (or
+                (not secs)
+                (not tx)
+                (zero? secs))
+            0
+            (round-1 (/ tx secs))))
+        (dom/div
+          {:class "counter-text"}
+          "tx/s"))
+      (heartbeat/heartbeat
+        (counter-state-ledgers state)))))

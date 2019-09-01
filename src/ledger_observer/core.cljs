@@ -16,6 +16,7 @@
             [ledger-observer.components.search :as search]
             [ledger-observer.components.search.data :as search-data]
             [ledger-observer.components.settings :as settings]
+            [ledger-observer.components.heartbeat :as heartbeat]
             [ledger-observer.components.counter :as counter]
             [ledger-observer.components.inspector :as inspector]
             [ledger-observer.bithomp-userinfo :as bithomp]
@@ -34,6 +35,7 @@
   [render-interaction-mailbox
    render-tx-mailbox
    filter-mailboxes
+   ledger-mailbox
    connection
    search-state
    inspector-state
@@ -142,6 +144,8 @@
    channel fetch-filtered-tx-action-mailbox
    address fetch-filtered-tx-action-address])
 
+(qt/def-record fetch-ledger-number-action [receiver])
+
 
 (rec/define-record-type NewTxsMessage
   (make-new-txs-message txs address) new-txs-message?
@@ -158,6 +162,7 @@
 (rec/define-record-type TriggerTxsFetchMessage
   (make-trigger-txs-fetch-message) trigger-txs-fetch-message? [])
 
+(qt/def-record trigger-fetch-ledger-number-message [])
 
 
 (defn initialize-renderer! [callbacks]
@@ -302,17 +307,22 @@
           render-interaction-mailbox (render-utils/render-state-from-app-mailbox-lens renderer-state)
           render-tx-mailbox          (data/render-state-new-tx-mailbox renderer-state)
 
-          filter-mailboxes (data/make-filter-mailboxes (mailbox/make-mailbox) (mailbox/make-mailbox))]
+          filter-mailboxes (data/make-filter-mailboxes
+                             (mailbox/make-mailbox) (mailbox/make-mailbox) (mailbox/make-mailbox))]
 
       (global-mouse/init!)
 
       (reacl/return
         :app-state (make-app-state render-interaction-mailbox render-tx-mailbox filter-mailboxes
-                     (make-not-connected-mode) search-data/initial-public-state inspector/initial-state (counter/make-counter-state 0 0)
+                     (mailbox/make-mailbox)
+                     (make-not-connected-mode) search-data/initial-public-state
+                     inspector/initial-state
+                     counter/initial-state
                      settings/initial-state
                      info/nop)
         :action (make-tick-me-every-second-action this)
         :action (bithomp/make-fetch-users-info-action this)
+        :action (make-fetch-ledger-number-action this)
         :action (make-create-socket-action this))))
 
 
@@ -377,28 +387,31 @@
                #(reacl/send-message! this (make-unset-address-message)))
              (inspector/inspector
                (reacl/opt :reaction reacl/no-reaction)
-               (app-state-inspector-state app-state))))))
+               (app-state-inspector-state app-state)))))
+
+       (settings/panel
+         (reacl/opt
+           :reduce-action (fn [_ action] (reacl/return :action action))
+           :embed-app-state (fn [as settings] (app-state-settings as settings)))
+         (app-state-settings app-state))
+
+       (dom/div (-> {:style {:position "absolute"
+                             :width    "100%"
+                             :bottom   "0"}}
+                  (maybe-invisible app-state))
+         (cond
+           (not-connected-mode? (app-state-connection app-state))
+           (dom/div
+             {:class "connecting-label fade-in"}
+             "Connecting to wss://s1.ripple.com")
+
+           (app-state-tx-stats app-state)
+           (counter/counter (reacl/opt :reaction reacl/no-reaction) (app-state-tx-stats app-state) this)))
+       )
 
 
-      (settings/panel
-        (reacl/opt
-          :reduce-action (fn [_ action] (reacl/return :action action))
-          :embed-app-state (fn [as settings] (app-state-settings as settings)))
-        (app-state-settings app-state))
 
 
-      (dom/div (-> {:style {:position "absolute"
-                            :width    "100%"
-                            :bottom   "40px"}}
-                 (maybe-invisible app-state))
-        (cond
-          (not-connected-mode? (app-state-connection app-state))
-          (dom/div
-            {:class "connecting-label fade-in"}
-            "Connecting to wss://s1.ripple.com")
-
-          (app-state-tx-stats app-state)
-          (counter/counter (reacl/opt :reaction reacl/no-reaction) (app-state-tx-stats app-state) this)))
 
       (dom/div {:id          "renderer-container"
                 :onmousemove (fn [^js/MouseEvent ev] (mouse/update-render-mouse-position! ev))
@@ -421,6 +434,15 @@
         :action (make-create-socket-action this)
         :app-state (app-state-connection app-state (make-not-connected-mode)))
 
+      (data/update-ledger-number-message? msg)
+      (let [ledger-number   (data/update-ledger-number-message-ledger-number msg)
+            next-app-state (lens/overhaul
+                             app-state
+                             (lens/>> app-state-tx-stats counter/counter-state-ledgers)
+                             #(heartbeat/next-heartbeat-state % ledger-number))]
+        (println msg)
+        (reacl/return :app-state next-app-state))
+
       (new-txs-message? msg)
       (reacl/return :app-state
         (let [?address (maybe-clicked-address app-state)]
@@ -430,6 +452,8 @@
                                   (remove nil? (new-txs-message-txs msg))) txs)))
             app-state)))
 
+      (trigger-fetch-ledger-number-message? msg)
+      (reacl/return :action (make-fetch-ledger-number-action this))
 
       (trigger-txs-fetch-message? msg)
       (if (maybe-clicked-address app-state)
@@ -511,25 +535,44 @@
     (let [render-tx-mailbox (app-state-render-tx-mailbox app-state)
           socket-mailbox    (socket-mailbox-lens app-state)
           app-mailbox       (-> app-state app-state-filter-mailboxes data/filter-mailboxes-app-mailbox)
+          ledger-mailbox    (app-state-ledger-mailbox app-state)
           socket            (setup-socket&receive-action-socket action)]
-      (socket/setup-ripple-socket! socket render-tx-mailbox socket-mailbox app-mailbox)
-      (reacl/return :app-state (app-state-connection app-state (make-default-mode))))
+      (socket/setup-ripple-socket! socket render-tx-mailbox socket-mailbox app-mailbox ledger-mailbox)
+      (reacl/return
+        :app-state (app-state-connection app-state (make-default-mode))))
 
     (fetch-filtered-tx-action? action)
     (let [^js/Object receiver (fetch-filtered-tx-action-receiver action)
-          mailbox  (fetch-filtered-tx-action-mailbox action)
-          msgs     (mailbox/receive-n mailbox 10)
-          txs      (map second msgs)
+          mailbox             (fetch-filtered-tx-action-mailbox action)
+          msgs                (mailbox/receive-n mailbox 10)
+          txs                 (map second msgs)
           ;; FIXME: This must be done properly later.
           ;; There can be many filter addresses later if various filter addresses
           ;; were set. Now we only accept one node in clicked state, so all addresses
           ;; must be equal.
-          addr     (first (first (map first msgs)))]
+          addr                (first (first (map first msgs)))]
       (js/window.setTimeout
         #(when (.isMounted receiver)
            (reacl/send-message! receiver (make-trigger-txs-fetch-message))) 200)
       (if addr
         (reacl/return :message [receiver (make-new-txs-message txs addr)])
+        (reacl/return)))
+
+    (fetch-ledger-number-action? action)
+    (let [^js/Object receiver (fetch-ledger-number-action-receiver action)
+          mailbox             (app-state-ledger-mailbox app-state)
+          msg                (first (mailbox/receive-n mailbox 10))
+          ;; FIXME: This must be done properly later.
+          ;; There can be many filter addresses later if various filter addresses
+          ;; were set. Now we only accept one node in clicked state, so all addresses
+          ;; must be equal.
+          ]
+      (js/window.setTimeout
+        #(when (.isMounted receiver)
+           (reacl/send-message! receiver (make-trigger-fetch-ledger-number-message))) 200)
+      (if msg
+        (reacl/return :message [receiver (data/make-update-ledger-number-message
+                                           (data/update-ledger-number-event-ledger-number msg))])
         (reacl/return)))
 
 
@@ -597,10 +640,13 @@
           (reacl/return)))
 
     (delayed/delayed-action? action)
-    (do (delayed/handle action)
-        (reacl/return))))
+    (do (delayed/handle-delayed action)
+        (reacl/return))
+
+
+    ))
 
 
 (reacl/render-component (.getElementById ^js/Document js/document "renderer") app
                         (reacl/opt :reduce-action handle-actions)
-                        (make-app-state nil nil nil (make-default-mode) search-data/initial-public-state inspector/initial-state nil settings/initial-state info/nop))
+                        (make-app-state nil nil nil (mailbox/make-mailbox) (make-default-mode) search-data/initial-public-state inspector/initial-state nil settings/initial-state info/nop))

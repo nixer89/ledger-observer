@@ -114,10 +114,10 @@
     (.getElementById js/document "renderer-container")
     (.-domElement renderer)))
 
-(defn init-controls [camera]
-  (let [ret (Controls. camera (.getElementById js/document "renderer-container"))]
+(defn init-controls [^js/Object camera]
+  (let [^js/Object ret (Controls. camera (.getElementById js/document "renderer-container"))]
     (set! (.-autoRotate ret) true)
-    (set! (.-autoRotateSpeed ret) 1.5)
+    (set! (.-autoRotateSpeed ret) 1.2)
     (set! (.-screenSpacePanning ret) true)
     (set! (.-minDistance ret) 20)
     ret
@@ -144,17 +144,18 @@
   []
   (let [points-data (init-points)
         ;;globe-data (globe/init-globe)
-        scene       (init-scene points-data)
-        camera      (init-camera scene)]
+        scene (init-scene points-data)
+        camera (init-camera scene)
+        controls (init-controls camera)]
     (data/make-render-state
-      (data/make-webgl-state scene camera (init-renderer) (init-controls camera))
-      points-data
-      (apply data/make-layout-data (graph-layout/layout))
-      animations-data/init
-      (mailbox/make-mailbox)
-      ai/initial-state
-      (data/make-mouse-state 0)
-      0)))
+     (data/make-webgl-state scene camera (init-renderer) controls)
+     points-data
+     (apply data/make-layout-data (graph-layout/layout))
+     animations-data/init
+     (mailbox/make-mailbox)
+     ai/initial-state
+     (data/make-mouse-state 0)
+     0)))
 
 (defn step-layout! [render-state]
   (graph-layout/step-layout!
