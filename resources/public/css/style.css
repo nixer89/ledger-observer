@@ -40,10 +40,15 @@ body {
 }
 
 .sidebar {
-    position: relative;
+    position: absolute;
     left: 60px;
     top: 50px;
-    width: 230px;
+    width: 300px;
+    display: block;
+    height:auto;
+    min-height: 570px;
+    bottom: 50px;
+    pointer-events: none;
 }
 
 @media only screen and (max-width: 550px) {
@@ -56,6 +61,10 @@ body {
         display: none;
     }
 
+    .menu-image {
+        display: none;
+    }
+
 }
 
 .logo-bottom-right {
@@ -64,8 +73,9 @@ body {
     background-repeat: no-repeat;
     background-size: 130px auto;
     background-image: url('../images/logo.png');
-    bottom: 43px;
+    bottom: 52px;
     right: 60px;
+    overflow:hidden;
     position: absolute;
 }
 
@@ -105,12 +115,13 @@ body {
 .sidebar > .search-field {
     position: absolute;
     width: 100%;
+    pointer-events: all;
 }
 
 .sidebar > .search-field > .search-state {
     position: absolute;
     top: 10px;
-    right: -25px;
+    right: 3px;
     color: white;
 }
 
@@ -129,8 +140,9 @@ body {
     font-weight: 700;
     font-family: "Ropa Sans";
     background-repeat: no-repeat;
-    background-position: right;
-
+    -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+    -moz-box-sizing: border-box;    /* Firefox, other Gecko */
+    box-sizing: border-box;     background-position: right;
 }
 
 input:focus::-webkit-input-placeholder { color:transparent; }
@@ -278,13 +290,17 @@ input:focus:-ms-input-placeholder { color:transparent; }
     marign-bottom: -2px;
 }
 
+
 .counter-number {
     float: left;
     color: #fff;
     text-align: right;
-    width: 55px;
+    width: 50px;
     padding-right: 8px;
-    
+}
+
+.counter-number.first {
+    width: 25px!important;
 }
 
 .counter-text {
@@ -295,7 +311,6 @@ input:focus:-ms-input-placeholder { color:transparent; }
 }
 
 .counter-components {
-    padding-left: 24px;
     font-size: 18px;
 }
 
@@ -304,6 +319,7 @@ input:focus:-ms-input-placeholder { color:transparent; }
     position: absolute;
     top: 60px;
     color: #7d7d7d;
+    pointer-events: all;
 }
 
 #inspect-menu img {
@@ -354,7 +370,7 @@ input:focus:-ms-input-placeholder { color:transparent; }
 .inspect-box {
     width: 280px;
     position: absolute;
-    top: 160px;
+    top: 140px;
     overflow: hidden;
 }
 
@@ -365,6 +381,7 @@ input:focus:-ms-input-placeholder { color:transparent; }
 }
 
 .inspect-box-inner {
+    pointer-events: all;
     width: 100%;
     height: 100%;
     overflow-y: scroll;
@@ -444,7 +461,7 @@ input:focus:-ms-input-placeholder { color:transparent; }
     color: #7d7d7d;
     overflow: hidden;
     text-overflow: ellipsis;
-    width: 80px;
+    width: 90px;
 }
 
 .inspect-tx-entry-hash a {
@@ -743,10 +760,10 @@ input:checked + .slider:before {
 
 
 .settings {
+    pointer-events: all;
     position: absolute;
-    bottom: 100px;
-    left: 59px;
-    width: 260px;
+    bottom: 50px;
+    width: 100%;
 }
 
 .settings .checkbox > .switch {
@@ -770,7 +787,7 @@ input:checked + .slider:before {
     float: left;
     border-bottom: 1px solid #3d3d3d;
     padding: 10px 0;
-    width: 260px;
+    width: 100%;
 }
 
 
@@ -786,3 +803,84 @@ input:checked + .slider:before {
     transition: opacity 1s linear;
 }
 
+
+
+
+
+
+.pulse {
+  position: absolute;
+  height: 35px;
+  width: 100px;
+  overflow: hidden;
+  position: absolute;
+  top: -8px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+}
+.pulse:after {
+  content: '';
+  display: block;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="300%" height="250%" viewBox="0 0 200px 100px" enable-background="new 0 0 200px 100px" xml:space="preserve"><polyline fill="none" stroke-width="3px" stroke="white" points="2.4,58.7 70.8,58.7 76.1,46.2 81.1,58.7 89.9,58.7 93.8,66.5 102.8,22.7 110.6,78.7 115.3,58.7 126.4,58.7 134.4,54.7 142.4,58.7 197.8,58.7 "/></svg>') 0 0 no-repeat;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  -webkit-animation: 1s pulse linear forwards;
+  -moz-animation: 1s pulse linear forwards;
+  -o-animation: 1s pulse linear forwards;
+  animation: 1s pulse linear forwards;
+  clip: rect(0, 0, 100px, 0);
+}
+.pulse:before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 2px;
+  right: 2px;
+  bottom: 0;
+  top: 16px;
+  margin: auto;
+  height: 3px;
+
+}
+
+
+@keyframes pulse {
+  0% {
+    clip: rect(0, 0, 100px, 0);
+    opacity: 0.3;
+  }
+  50% {
+    clip: rect(0, 90px, 50px, 0);
+     opacity:1;
+  }
+  100% {
+    clip: rect(0, 90px, 50px, 80px);
+     opacity:0;
+  }
+}
+
+@keyframes hide-under-pulse {
+    0% {
+        opacity: 1.0;
+    }
+    15% {
+        opacity: 0.0;
+    }
+    65% {
+        opacity:0.0;
+    }
+    100% {
+        opacity:1.0;
+    }
+}
+
+.hide-under-pulse {
+    text-align: right;
+    -webkit-animation: 1.3s hide-under-pulse linear forwards;
+    -moz-animation: 1.3s hide-under-pulse linear forwards;
+    -o-animation: 1.3s hide-under-pulse linear forwards;
+    animation: 1.3s hide-under-pulse linear forwards;
+}

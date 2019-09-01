@@ -1,12 +1,15 @@
 (ns ledger-observer.visualization.data
   (:require
    [active.clojure.cljs.record :as rec :include-macros true]
+   [quick-type.core :as qt :include-macros true]
    [active.clojure.lens :as lens :include-macros true]))
 
 (rec/define-record-type FilterMailboxes
-  (make-filter-mailboxes in-f out-f) filter-mailboxes?
+  (make-filter-mailboxes in-f in-ledger-number out-f) filter-mailboxes?
   [in-f  filter-mailboxes-socket-mailbox
-   out-f filter-mailboxes-app-mailbox])
+   in-ledger-number filter-mailboxes-app-mailbox-ledger-number
+   out-f filter-mailboxes-app-mailbox
+   ])
 
 (rec/define-record-type GuiComponentsCallbacks
   (make-gui-component-callbacks tx-counter set-address hover-address) gui-component-callback?
@@ -16,13 +19,16 @@
 
 
 (rec/define-record-type NewTransactionEvent
-  (make-new-transaction-event tid from targets type success?) new-transaction-event?
+  (make-new-transaction-event tid from targets type ledger-number success?) new-transaction-event?
   [tid new-transaction-event-tid
    from new-transaction-event-from
    targets new-transaction-event-targets
    type new-transaction-event-type
+   ledger-number new-transaction-event-ledger-number
    success? new-transaction-event-success?])
 
+(qt/def-record update-ledger-number-event [ledger-number])
+(qt/def-record update-ledger-number-message [ledger-number])
 
 (rec/define-record-type PointsData
   (make-points-data points positions points-cloud colors sizes) points-data?
