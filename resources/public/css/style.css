@@ -295,12 +295,12 @@ input:focus:-ms-input-placeholder { color:transparent; }
     float: left;
     color: #fff;
     text-align: right;
-    width: 50px;
+    width: 47px;
     padding-right: 8px;
 }
 
 .counter-number.first {
-    width: 25px!important;
+    width: 35px!important;
 }
 
 .counter-text {
