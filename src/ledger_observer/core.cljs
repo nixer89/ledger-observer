@@ -231,12 +231,14 @@
 
 (defn new-transaction-event->tx [event address]
   (inspector/make-tx
-    (data/new-transaction-event-tid event)
-    (data/new-transaction-event-from event)
-    (data/new-transaction-event-targets event)
-    (data/new-transaction-event-type event)
-    (if (= address (data/new-transaction-event-from event)) "Issuer" "Attendee")
-    (data/new-transaction-event-success? event)))
+    (data/transaction-event-tid event)
+    (data/transaction-event-from event)
+    (data/transaction-event-targets event)
+    (data/transaction-event-type event)
+    (if (= address (data/transaction-event-from event)) "Issuer" "Attendee")
+    ;; TODO use new failed event
+    true
+    ))
 
 
 (rec/define-record-type TickMeEverySecondAction
@@ -440,7 +442,6 @@
                              app-state
                              (lens/>> app-state-tx-stats counter/counter-state-ledgers)
                              #(heartbeat/next-heartbeat-state % ledger-number))]
-        (println msg)
         (reacl/return :app-state next-app-state))
 
       (new-txs-message? msg)

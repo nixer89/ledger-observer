@@ -182,15 +182,13 @@
 
 
 
-(def node-material
-  (three/PointsMaterial.
-   (clj->js {:vertexColors three/VertexColors :size 3 :sizeAttenuation false})))
+
+(defn point-1 [] (js/THREE.ShaderMaterial.
+                (clj->js {:uniforms       {:color   {:value (js/THREE.Color. 0xffffff)}
+                                           :texture {:value (.load (js/THREE.TextureLoader.) "images/circle.png")}}
+                          :vertexShader   (.-textContent (.getElementById js/document "circle-vertexshader"))
+                          :fragmentShader (.-textContent (.getElementById js/document "circle-fragmentshader"))
+                          :alphaTest      0.5})))
 
 
-
-(def node-material-active
-  (three/PointsMaterial.
-   (clj->js {:color 0xFF0000 :size 10 :sizeAttenuation false})))
-
-
-
+(def point (memoize point-1))

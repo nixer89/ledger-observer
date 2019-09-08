@@ -1,13 +1,13 @@
-(ns ledger-observer.visualization.data.animations
+(ns ledger-observer.visualization.animations.data
   (:require
    [active.clojure.cljs.record :as rec :include-macros true]
    [quick-type.core :as qt :include-macros true]
+   [ledger-observer.visualization.animations.payment :as payment]
    [active.clojure.lens :as lens :include-macros true]))
 
 
-
 (qt/def-type link-animation-t
-  [(payment-animation [initialized? temperature animation-ref link-ref direction])])
+  [payment/payment-t])
 
 
 (qt/def-record animation-state

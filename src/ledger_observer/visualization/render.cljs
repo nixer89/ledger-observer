@@ -10,7 +10,6 @@
             [ledger-observer.visualization.materials :as materials]
             [ledger-observer.visualization.geometries :as geometries]
             [ledger-observer.visualization.animations :as animations]
-            [ledger-observer.visualization.data.animations :as animations-data]
             [ledger-observer.visualization.mouse :as mouse]
             #_[ledger-observer.visualization.stats :as stats]
             [ledger-observer.visualization.graph-layout :as graph-layout]
@@ -86,7 +85,7 @@
 
 (defn init-points []
   (let [max-points 100000
-        points     geometries/point-geometry
+        points     (geometries/point-geometry)
 
         positions (js/Float32Array. (* 3 max-points) )
         colors    (js/Float32Array. (* 3 max-points))
@@ -97,12 +96,7 @@
         _ (.addAttribute points "customColor" (js/THREE.BufferAttribute. colors 3))
         _ (.addAttribute points "size" (js/THREE.BufferAttribute. sizes 1))
 
-        material (js/THREE.ShaderMaterial.
-                   (clj->js {:uniforms       {:color   {:value (js/THREE.Color. 0xffffff)}
-                                              :texture {:value (.load (js/THREE.TextureLoader.) "images/circle.png")}}
-                             :vertexShader   (.-textContent (.getElementById js/document "circle-vertexshader"))
-                             :fragmentShader (.-textContent (.getElementById js/document "circle-fragmentshader"))
-                             :alphaTest      0.5}))
+        material (materials/point)
 
         points-cloud (js/THREE.Points. points material)]
 
@@ -151,7 +145,7 @@
      (data/make-webgl-state scene camera (init-renderer) controls)
      points-data
      (apply data/make-layout-data (graph-layout/layout))
-     animations-data/init
+     animations/init
      (mailbox/make-mailbox)
      ai/initial-state
      (data/make-mouse-state 0)
@@ -267,8 +261,8 @@
               num         (:num (.-data node))
               num*3       (* 3 num)
               x-num       num*3
-              y-num       (inc num*3)
-              z-num       (inc (inc num*3))
+              y-num       (inc x-num)
+              z-num       (inc y-num)
               layout-node (.getNodePosition layout id)]
 
           (aset positions x-num (.-x layout-node))
@@ -446,7 +440,7 @@
   (.update (u/render-state-tx-stats-state-lens render-state))
   render-state)
 
-(defn animate [render-state]
+(defn update-animations [render-state]
   (lens/overhaul
     render-state
     data/render-state-animation-state
@@ -456,10 +450,9 @@
   (-> render-state
     (step-layout!)
     (update-node-positions)
-    #_(globe/update-globe!)
     (update-link-positions)
-    (animate)
-    (update-sizes)))
+    (update-sizes)
+    (update-animations)))
 
 
 (defn animate-link! [^js/Object render-state graph from to type success?]
@@ -479,7 +472,7 @@
 
 (defn maybe-add-link&animate! [^js/Object render-state from to type success?]
   (if (not= from to)
-    (let [graph (data/render-state-graph render-state)]
+    (let [^js/Object graph (data/render-state-graph render-state)]
       (when-not (graph-layout/link-exists? graph from to)
         (.addLink graph from to))
       (animate-link! render-state graph from to type success?))
@@ -491,10 +484,11 @@
       (.addNode graph id {:num count}))))
 
 (defn add-tx-to-graph [render-state event]
-  (let [from     (data/new-transaction-event-from event)
-        to       (data/new-transaction-event-targets event)
-        type     (data/new-transaction-event-type event)
-        success? (data/new-transaction-event-success? event)
+  (let [from     (data/transaction-event-from event)
+        to       (data/transaction-event-targets event)
+        type     (data/transaction-event-type event)
+        ;; TODO
+        success? true
 
         graph (data/render-state-graph render-state)]
     (add-node-if-not-exists! graph from)
@@ -506,12 +500,18 @@
 (defn tx-event-handler [render-state tx-event]
   (cond
 
-    (data/new-transaction-event? tx-event)
+    (data/transaction-event? tx-event)
     (let [num-tx (inc (lens/yank render-state u/tx-counter-lens))]
       (-> render-state
         (add-tx-to-graph tx-event)
         (u/tx-counter-lens num-tx)
         (u/tx-stats-updated-lens (.getTime (js/Date.)))))
+
+    (data/payment-transaction-event? tx-event)
+    (do
+      (println "Hello")
+      render-state
+      )
 
     :default
     render-state))

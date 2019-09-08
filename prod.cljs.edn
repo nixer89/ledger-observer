@@ -5,4 +5,5 @@
 
 {:main          ledger-observer.core
  :infer-externs true
+ :pseudo-names true
  :output-to     "resources/public/cljs-out/main.js"}

@@ -1,17 +1,16 @@
 (ns ledger-observer.visualization.geometries
-  (:require [ledger-observer.visualization.materials :as materials]
-            three))
+  (:require [ledger-observer.visualization.materials :as materials]))
 
 (defn vec-to-vector3 [[x y z]]
-  (three/Vector3. x y z))
+  (js/THREE.Vector3. x y z))
 
 
 
 (defn line-geometry-js [from to]
-  (let [geometry (three/Geometry.)]
+  (let [geometry (js/THREE.Geometry.)]
     (.push (.-vertices geometry) from)
     (.push (.-vertices geometry) to)
-    (three/Line. geometry materials/base-line-material)))
+    (js/THREE.Line. geometry materials/base-line-material)))
 
 
 (defn line-geometry [[from to]]
@@ -19,4 +18,4 @@
    (vec-to-vector3 from)
    (vec-to-vector3 to)))
 
-(def point-geometry (three/BufferGeometry.))
+(defn point-geometry [] (js/THREE.BufferGeometry.))

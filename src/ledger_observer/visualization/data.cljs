@@ -18,14 +18,10 @@
    hover-address gui-component-callbacks-hover-address])
 
 
-(rec/define-record-type NewTransactionEvent
-  (make-new-transaction-event tid from targets type ledger-number success?) new-transaction-event?
-  [tid new-transaction-event-tid
-   from new-transaction-event-from
-   targets new-transaction-event-targets
-   type new-transaction-event-type
-   ledger-number new-transaction-event-ledger-number
-   success? new-transaction-event-success?])
+(qt/def-type socket-message
+  [(transaction-event [tid from targets type ledger-number success?])
+   (payment-transaction-event [tid sender receiver issuers signers ledger-number success?])])
+
 
 (qt/def-record update-ledger-number-event [ledger-number])
 (qt/def-record update-ledger-number-message [ledger-number])

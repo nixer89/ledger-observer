@@ -48,28 +48,64 @@
 
 (defn contains-address? [message addresses]
   (or
-    (some #{(data/new-transaction-event-from message)} addresses)
-    (some (fn [addr] (some #{addr} addresses)) (data/new-transaction-event-targets message))))
+    (some #{(data/transaction-event-from message)} addresses)
+    (some (fn [addr] (some #{addr} addresses)) (data/transaction-event-targets message))))
 
-(defn parse-accounts [json]
+
+(defn update-ledger-number [json]
+  (let [ln (get json "ledger_index")]
+    (when (> ln @ledger-number)
+      (reset! ledger-number ln)
+      ln)))
+
+
+(defn parse-issuers [sender receiver parsed-changes]
+  (reduce-kv
+    (fn [acc k _]
+      (if (not (or (= sender k) (= k receiver)))
+        (cons k acc)
+        acc))
+    []
+    parsed-changes))
+
+(defn parse-payment [tx-json meta success?]
+  (let [sender         (get tx-json "Account")
+        receiver    (get tx-json "Destination")
+        hash     (get tx-json "hash")
+        parsed-changes (js->clj (js/txparser.parseBalanceChanges (clj->js meta)))
+        issuers (parse-issuers sender receiver parsed-changes)
+        signers (parse-accounts-helper (get tx-json "Signers"))]
+    (data/make-payment-transaction-event hash sender receiver issuers signers nil success?)))
+
+
+(defn parse-generic [json success?]
+  (let [source     (get-in json ["transaction" "Account"])
+        tx-type    (get-in json ["transaction" "TransactionType"])
+        taker-gets (get-in json ["transaction" "TakerPays"])
+        taker-pays (get-in json ["transaction" "TakerGets"])
+        hash       (get-in json ["transaction" "hash"])
+        targets    (if (= tx-type "Payment")
+                     [(get-in json ["transaction" "Destination"])]
+                     (vec (remove #{source} (set (parse-accounts-helper json)))))]
+    (when source
+      (data/make-transaction-event hash source targets tx-type ledger-number success?))))
+
+
+(defn parse-transaction [json]
+
   ;; (js/console.log (js/txparser.parseBalanceChanges (clj->js (get (read-json json) "meta"))))
   ;; (js/console.log (count (js->clj (js/txparser.parseBalanceChanges (clj->js (get (read-json json) "meta"))))))
+  (let [tx (get json "transaction")
+        tx-type (get tx "TransactionType")
+        meta (get json "meta")
+        success? (= "tesSUCCESS" (get meta "tesSUCCESS"))]
 
-  (let [msg      (read-json json)
-        source   (get-in msg ["transaction" "Account"])
-        ln       (get msg "ledger_index")
-        success? (= "tesSUCCESS" (get-in msg ["meta" "TransactionResult"]))
-        tx-type  (get-in msg ["transaction" "TransactionType"])
-        hash     (get-in msg ["transaction" "hash"])
-        targets  (if (= tx-type "Payment")
-                   [(get-in msg ["transaction" "Destination"])]
-                   (vec (remove #{source} (set (parse-accounts-helper msg)))))]
-    [(if (> ln @ledger-number)
-       (do
-         (reset! ledger-number ln)
-         ln)
-       nil)
-     (data/make-new-transaction-event hash source targets tx-type ledger-number success?)]))
+    (cond
+      (= tx-type "Payment")
+      (parse-payment tx meta success?)
+
+      :default
+      (parse-generic json success?))))
 
 #_(defn create-ripple-socket [] (ws/connect "ws://s1.ripple.com"))
 
@@ -92,19 +128,21 @@
 
 (defn make-handle-tx [app-mailbox socket-mailbox render-tx-mailbox ledger-number-mailbox]
   (fn [tx]
-    (let [[?new-ledger-number message] (parse-accounts (.-data tx))
-          ?filter-address-events       (mailbox/receive-all socket-mailbox)]
+    (let [json                   (read-json (.-data tx))
+          ?message               (parse-transaction json)
+          ?new-ledger-number     (update-ledger-number json)
+          ?filter-address-events (mailbox/receive-all socket-mailbox)]
 
       (run! process-filter-address-event! ?filter-address-events)
 
       (when ?new-ledger-number
         (mailbox/send! ledger-number-mailbox (data/make-update-ledger-number-event ?new-ledger-number)))
 
-      (when (data/new-transaction-event-from message) ; process new transaction
+      (when ?message ; process new transaction
         (.setTimeout js/window
-          #(do (when (and (not-empty @filter-addresses) (contains-address? message @filter-addresses))
-                 (mailbox/send! app-mailbox [@filter-addresses message]))
-               (mailbox/send! render-tx-mailbox message))
+          #(do (when (and (not-empty @filter-addresses) (contains-address? ?message @filter-addresses))
+                 (mailbox/send! app-mailbox [@filter-addresses ?message]))
+               (mailbox/send! render-tx-mailbox ?message))
           (rand-int 500))))))
 
 
@@ -113,4 +151,9 @@
   (set! (.-onmessage ripple-socket)
     (make-handle-tx app-mailbox socket-mailbox render-tx-mailbox ledger-number-app-mailbox)))
 
+#_(defn setup-ripple-socket! [ripple-socket render-tx-mailbox socket-mailbox app-mailbox ledger-number-app-mailbox]
+  (js/window.setInterval
+    #(mailbox/send! render-tx-mailbox (data/make-new-transaction-event 123 (str (rand-int 10)) [(str (rand-int 10))] "Payment" 3 true))
+    3000)
+  )
 
