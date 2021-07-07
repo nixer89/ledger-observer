@@ -4,7 +4,7 @@
 XRPL Observer is a real-time visualization of the XRP Ledger (XRPL). 
 Watch it live on http://observer.xrpldata.com
 
-Credits to @LedgerObserver (Simon Härer) for creating this awesome project. I am very sad that it was discontinued.
+Credits to @LedgerObserver (Simon Härer) on twitter for creating this awesome project. I am very sad that it was discontinued.
 
 It is written in clojurescript using reacl (pure and truly composable clojurescript react library), three.js & ngraph. 
 
