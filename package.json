@@ -17,7 +17,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-	"three": "0.91.0",
+        "three": "0.91.0",
         "ngraph.forcelayout3d": "0.0.16",
         "ripple-lib-transactionparser": "0.7.1",
         "ngraph.graph": "0.0.14",
@@ -25,6 +25,5 @@
         "three-orbitcontrols": "2.102.2",
         "webpack": "^4.23.1",
         "webpack-cli": "^3.1.2"
-
     }
 }

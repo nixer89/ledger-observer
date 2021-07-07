@@ -22,6 +22,8 @@
   [(transaction-event [tid from targets type ledger-number success?])
    (payment-transaction-event [tid sender receiver issuers signers ledger-number success?])])
 
+(qt/def-record update-ledger-number-event [ledger-number])
+(qt/def-record update-ledger-number-message [ledger-number])
 
 (qt/def-record update-ledger-number-event [ledger-number])
 (qt/def-record update-ledger-number-message [ledger-number])

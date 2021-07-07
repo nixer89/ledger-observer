@@ -107,11 +107,11 @@
       :default
       (parse-generic json success?))))
 
-#_(defn create-ripple-socket [] (ws/connect "ws://s1.ripple.com"))
+#_(defn create-ripple-socket [] (ws/connect "ws://xrplcluster.com"))
 
 
 (defn create-ripple-socket! [callback-open callback-close]
-  (let [socket (js/WebSocket. "wss://s1.ripple.com")]
+  (let [socket (js/WebSocket. "wss://xrplcluster.com")]
     (set! (.-onopen socket) (fn [_] (.setTimeout js/window #(callback-open socket)  1000)))
     (set! (.-onclose socket) #(callback-close %))))
 
