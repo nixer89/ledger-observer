@@ -1,8 +1,8 @@
 
-# `ledger.observer`
+# `XRPL Observer`
 
 ledger.observer is a real-time visualization of the XRP Ledger (XRPL). 
-Watch it live on http://ledger.observer
+Watch it live on http://observer.xrpldata.com
 
 It is written in clojurescript using reacl (pure and truly composable clojurescript react library), three.js & ngraph. 
 

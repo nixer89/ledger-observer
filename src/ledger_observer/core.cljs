@@ -348,7 +348,7 @@
            (dom/img {:src "images/info.png" :style {:width "23px" :height "23px"}}))
          (dom/li
            {:class "menu-image github-icon"}
-           (dom/a {:href "https://github.com/smoes/ledger-observer" :target "_blank"}
+           (dom/a {:href "https://github.com/nixer89/ledger-observer" :target "_blank"}
              (dom/img {:src "images/github.png" :style {:width "20px" :height "20px" :margin-top "1px"}}
 
               )))
@@ -403,7 +403,7 @@
            (not-connected-mode? (app-state-connection app-state))
            (dom/div
              {:class "connecting-label fade-in"}
-             "Connecting to wss://s1.ripple.com")
+             "Connecting to wss://xrplcluster.com")
 
            (app-state-tx-stats app-state)
            (counter/counter (reacl/opt :reaction reacl/no-reaction) (app-state-tx-stats app-state) this)))
