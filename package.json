@@ -22,7 +22,7 @@
         "ngraph.graph": "0.0.14",
         "stats-js": "^1.0.0-alpha1",
         "three-orbitcontrols": "2.102.2",
-        "webpack": "^4.23.1",
-        "webpack-cli": "^3.1.2"
+        "webpack": "^5.75.0",
+        "webpack-cli": "^5.0.1"
     }
 }
